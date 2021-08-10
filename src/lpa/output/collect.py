@@ -146,7 +146,7 @@ def average_file(
 def load(
     q: List,
     n: str,
-    p: str = 'output/',
+    p: str,
 ) -> Tuple:
     """
     Return the values of q from the simulation output n.
@@ -170,4 +170,4 @@ def load(
             average_file(n, p, p)
         return load_file(q, n+AVGF, p)
     else:
-        raise ValueError('nothing found at specified path')
+        raise ValueError('nothing found at specified path: '+p+n)
