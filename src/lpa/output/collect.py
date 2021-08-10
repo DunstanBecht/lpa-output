@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Tool for recovering data stored in files.
+Tool for loading data stored in simulation output files.
 """
 
 from . import *
@@ -19,7 +19,7 @@ HQ = { # header quantities and corresponding lines
     'a': 7,
 }
 
-AVGF = "_averaged.dat" # naming convention for averaged files
+AVGF = "_averaged.dat" # name extension convention for averaged files
 
 @beartype
 def load_file(
@@ -35,7 +35,7 @@ def load_file(
 
     Input:
         q: name of the quantities to extract
-        n: name of the file
+        n: name of the simulation output file
         p: path to the directory where n can be found
 
     Output:
@@ -59,8 +59,8 @@ def load_file(
         'err_Sin' (ScalarList): sin error of the first harmonic
         'err_Cos_<j>AL' (ScalarList): cos error of the <j>th harmonic
         'err_Sin_<j>AL' (ScalarList): sin error of the <j>th harmonic
-        '<eps^2>' (ScalarList): ?
-        'bad_points' (ScalarList): ?
+        '<eps^2>' (ScalarList): mean square strain
+        'bad_points' (ScalarList): number of incorrect random points
     """
     with open(p+n, "r") as f:
         hd = [f.readline().strip('\n') for i in range(HL)] # header data
@@ -93,15 +93,15 @@ def load_directory(
     p: str,
 ) -> Tuple:
     """
-    Average the values of fields in q over the files of the directory n.
+    Average and return the values of q over the files in directory n.
 
-    The quantity values of each file in the sample directory are loaded
-    with the load_file function and returned averaged. The same
-    quantities as in function load_file can be extracted.
+    The quantity values of each file in the directory are loaded with
+    the load_file function and returned averaged. The same quantities
+    as in function load_file can be extracted.
 
     Input:
         q: name of the quantities to extract and average
-        n: name of the directory
+        n: name of the simulation output directory
         p: path to the directory where n can be found
 
     Ouput:
@@ -119,10 +119,10 @@ def average_file(
     o: str,
 ) -> None:
     """
-    Export an averaged simulation output file.
+    Export an averaged simulation output file from a directory.
 
     Input:
-        s: directory name of the sample of distributions
+        s: name of the simulation output directory
         i: path where the sample directory can be found
         o: path where the averaged file will be exported
     """
@@ -149,7 +149,7 @@ def load(
     p: str = 'output/',
 ) -> Tuple:
     """
-    Load optimally the results of a distribution or a sample n.
+    Return the values of q from the simulation output n.
 
     When the results of a sample are requested, an average file is
     created if it does not exist. The same quantities as in function
@@ -157,7 +157,7 @@ def load(
 
     Input:
         q: name of the quantities to extract
-        n: name of the distribution or the sample
+        n: name of the simulation output (file or directory)
         p: path where n can be found
 
     Output:

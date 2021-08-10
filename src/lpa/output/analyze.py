@@ -21,7 +21,7 @@ def A(
     Return the averaged Fourier amplitude for the harmonics j from n.
 
     Input:
-        n: name of the results directory of the analyzed sample
+        n: name of the simulation output (file or directory)
         j: harmonics of diffraction vector
         p: path where n can be found
 
@@ -101,7 +101,7 @@ def common(
     Return a set of common quantities related to a simulation.
 
     Input:
-        s: name of the results directory of the analyzed sample
+        s: name of the simulation output (file or directory)
         p: path where s can be found
         j: harmonics studied
 
@@ -109,7 +109,7 @@ def common(
         c: dictionary containing the quantities common to a simulation
 
     The quantities contained in c are the following:
-        'name': name of the results directory
+        'name': name of the simulation output
         'g' (Vector): diffraction vector [nm^-1]
         'z' (Vector): line vector direction [uvw]
         'b' (Vector): Burgers vector [nm]
@@ -125,7 +125,7 @@ def common(
         'A' (ScalarListList): Fourier amplitudes for harmonics in j [1]
         'i1' (List): index at which the noise starts for each harmonic
         'i2' (List): index of linear zone end for each harmonic
-        'index' (dict): index of the harmonics
+        'index' (dict): reverse indexing for the harmonics
     """
     c = {}
     q = ['g', 'z', 'b', 'C', 'a', 'J', 'L']
@@ -155,7 +155,7 @@ def fit(
     f: str,
 ) -> dict:
     """
-    Return the table of fits of model m on simulation c.
+    Return information on the fits made of model m on simulation c.
 
     A fit is calculated for each harmonic and each interval of L.
 
@@ -165,15 +165,16 @@ def fit(
         f: lowpass filter name
 
     Output:
-        n: column names
-        v: column values
+        f: dictionary containing the information on the fits
 
-    The table contains the following columns:
-        j: harmonics
-        L: maximum values ​​of L [nm]
-        d: optimal density for the fit [nm^-2]
-        r: optimal outer cut-off radius for the fit [nm]
-        e: fit errors
+    f contains the following fields:
+        'name' (str): name of the model
+        'j' (ScalarList): harmonics
+        'L' (ScalarList): maximum values ​​of L [nm]
+        'd' (ScalarList): optimal density for the fit [nm^-2]
+        'r' (ScalarList): optimal outer cut-off radius for the fit [nm]
+        'e' (ScalarList): optimal fit errors
+        'm' (Callable): model function
     """
     J, L, D, R, E, = [], [], [], [], []
     for i_j in range(len(c['j'])):
@@ -222,7 +223,7 @@ def plot(
         p: path where the figure must be exported
         j: restriction of harmonics to be displayed
         t: title of the figure
-        f: models fits
+        f: fits information
         L: restriction of maximum L values
         e: file extension
     """
@@ -311,13 +312,13 @@ def export_model(
     n: str,
 ) -> None:
     """
-    Export the table of fits and the corresponding figures.
+    Export the information on fits and the corresponding figures.
 
     Input:
         m: dictionary containing information about the model
         c: common quantities
-        p: path
-        n: file name
+        p: path where to export the fits outputs
+        n: name of the fits outputs
     """
     f = fit(m['function'], c, m['filter'])
     p_f = p+"/"+f['name']+"/"
@@ -363,9 +364,9 @@ def export(
     Do an analysis of A with the available models.
 
     Input:
-        s: name of the results directory of the analyzed sample
+        s: name of the simulation output (file or directory)
         i: path where s can be found
-        o: path where to export the analysis
+        o: path where to export the fits outputs
     """
     if i!="" and i[-1]!="/":
         i += "/"
