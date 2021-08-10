@@ -356,8 +356,8 @@ def export_model(
 @beartype
 def export(
     s: str,
-    i: str = "output/",
-    o: str = "exported/",
+    i: str = "",
+    o: str = "",
 ) -> None:
     """
     Do an analysis of A with the available models.
@@ -367,6 +367,10 @@ def export(
         i: path where s can be found
         o: path where to export the analysis
     """
+    if i!="" and i[-1]!="/":
+        i += "/"
+    if o!="" and o[-1]!="/":
+        o += "/"
     # title
     t = " ".join(s.split("_"))
     # directory
