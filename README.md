@@ -28,7 +28,7 @@ Some abbreviations are used in the figures:
 
 The project is indexed on [PyPI](https://pypi.org/project/lpa-output/) and installable directly via pip.
 ```bash
-pip install lpa-output
+pip install -U lpa-output
 ```
 
 ### Analysis
