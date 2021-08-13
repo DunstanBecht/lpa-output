@@ -2,17 +2,27 @@
   <img width="250" src="https://dunstan.becht.network/views/signatures/mines.svg" alt="Mines Saint-Etienne">
 </div>
 
-# Project
+# Line Profile Analysis - Output
 
-This repository is related to the analysis of crystals containing dislocations by X-ray diffraction. It is part of a larger project conducted during a research internship at the laboratory of material and structural sciences of the *École Nationale Supérieure des Mines de Saint-Étienne*.
+This repository is related to the analysis of crystals containing dislocations by X-ray diffraction. It is part of a project conducted during a research internship at the laboratory of material and structural sciences of the *École Nationale Supérieure des Mines de Saint-Étienne*. Three python packages have been developed to conduct line profile analyses based on simulation results:
+* [`lpa.input`](https://github.com/DunstanBecht/lpa-input) (line profile analysis input generator)
+* [`lpa.xrd`](https://github.com/DunstanBecht/lpa-xrd) (line profile analysis x-ray diffraction simulation program)
+* [`lpa.output`](https://github.com/DunstanBecht/lpa-output) (line profile analysis output analyzer)
 
 # Features
 
-The tools developed can be used to:
+The package `lpa.output` can be used to:
 * average the simulation output files
 * export figures presenting the Fourier amplitudes for each harmonic
 * fit different model for the calculation of the dislocation density
 * export files and graphics containing information on fits
+
+# Installation
+
+The package is indexed on [PyPI](https://pypi.org/project/lpa-input/) and installable directly via pip:
+```bash
+pip install -U lpa-output
+```
 
 # Abbreviations
 
@@ -24,19 +34,4 @@ Some abbreviations are used in the figures:
 
 # User guide
 
-### Installation
-
-The project is indexed on [PyPI](https://pypi.org/project/lpa-output/) and installable directly via pip.
-```bash
-pip install -U lpa-output
-```
-
-### Analysis
-
-To export in the directory `output-fits` the fit information on the simulation output `500_circle_1e3nm_rrdde_1e15m-2_screw` located in the directory `output-data`:
-
-```python
-from lpa.output import analyze
-s = '500_circle_1e3nm_rrdde_1e15m-2_screw'
-analyze.export(s, i='output-data', o='output-fits')
-```
+The directory `tests/` contains several examples of package module usage. The docstrings are carefully written and it is recommended to refer to the documentation with the `help()` command.
