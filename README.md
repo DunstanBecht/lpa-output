@@ -19,7 +19,7 @@ The package `lpa.output` can be used to:
 
 # Installation
 
-The package is indexed on [PyPI](https://pypi.org/project/lpa-input/) and installable directly via pip:
+The package is indexed on [PyPI](https://pypi.org/project/lpa-output/) and installable directly via pip:
 ```bash
 pip install -U lpa-output
 ```
