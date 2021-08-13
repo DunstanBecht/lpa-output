@@ -15,7 +15,7 @@ from . import models
 def A(
     n: str,
     j: ScalarList,
-    p: str = 'output/',
+    p: str,
 ) -> ScalarListList:
     """
     Return the averaged Fourier amplitude for the harmonics j from n.
@@ -94,7 +94,7 @@ def lowpass2(
 @beartype
 def common(
     s: str,
-    p: str = 'output/',
+    p: str,
     j: Optional[ScalarList] = None,
 ) -> dict:
     """

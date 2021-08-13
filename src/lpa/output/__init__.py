@@ -5,7 +5,7 @@
 Tools for the analysis of X-ray diffraction simulation output.
 
 After the simulation, the output file containing the cos and sin
-coefficients from Fourier analysis can be studied with this package.
+coefficients of Fourier analysis can be studied with this package.
 The different models are then fitted to the simulation results and for
 each fit we can calculate the density predicted by the model.
 """
