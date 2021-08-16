@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Studied models.
+Available models.
 """
 
 import scipy

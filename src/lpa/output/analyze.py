@@ -13,33 +13,35 @@ from . import models
 
 @beartype
 def A(
-    n: str,
+    imstm: str,
+    imdir: str,
     j: ScalarList,
-    p: str,
 ) -> ScalarListList:
     """
-    Return the averaged Fourier amplitude for the harmonics j from n.
+    Return the averaged Fourier amplitude for the harmonics j.
 
     Input:
-        n: name of the simulation output (file or directory)
+        imstm: stem of the simulation output
         j: harmonics of diffraction vector
-        p: path where n can be found
+        imdir: import directory
 
     Output:
         a: averaged Fourier amplitude for each harmonic in j
-        [
+
+    Output example:
+        a = [
             np.array([A_1(L_1), A_1(L_2), A_1(L_3), ...]),
             np.array([A_2(L_1), A_2(L_2), A_2(L_3), ...]),
             ...
         ]
     """
-    q = []
+    q = [] # quantity names
     for h in j:
         if h == 1:
             q += ['cos_AL', 'sin_AL']
         else:
             q += ['Cos_'+str(h)+'AL', 'Sin_'+str(h)+'AL']
-    m = collect.load(q, n, p)
+    m = collect.load(q, imstm, imdir) # load coefficidnt table
     return [np.sqrt(m[2*h-2]**2+m[2*h-1]**2) for h in j]
 
 @beartype
@@ -93,16 +95,16 @@ def lowpass2(
 
 @beartype
 def common(
-    s: str,
-    p: str,
+    imstm: str,
+    imdir: str,
     j: Optional[ScalarList] = None,
 ) -> dict:
     """
     Return a set of common quantities related to a simulation.
 
     Input:
-        s: name of the simulation output (file or directory)
-        p: path where s can be found
+        imstm: stem of the simulation output
+        imdir: import directory
         j: harmonics studied
 
     Output:
@@ -129,7 +131,7 @@ def common(
     """
     c = {}
     q = ['g', 'z', 'b', 'C', 'a', 'J', 'L']
-    for k, v in zip(q, collect.load(q, s, p)):
+    for k, v in zip(q, collect.load(q, imstm, imdir)):
         c[k] = v
     c['g'] = c['g']/c['a'] # diffraction vector with correct norm
     if j is None:
@@ -140,7 +142,7 @@ def common(
     c['jgb'] = np.sum(c['b']*c['jg'], axis=1)
     c['b2'] = np.sum(c['b']**2)
     c['jg2'] = np.sum(c['jg']**2, axis=1)
-    c['A'] = A(s, c['j'], p)
+    c['A'] = A(imstm, imdir, c['j'])
     c['i1'] = [lowpass1(a) for a in c['A']]
     c['i2'] = [lowpass2(a, c['L']) for a in c['A']]
     c['index'] = {}
@@ -176,22 +178,22 @@ def fit(
         'e' (ScalarList): optimal fit errors
         'm' (Callable): model function
     """
-    J, L, D, R, E, = [], [], [], [], []
+    J, L, D, R, E, = [], [], [], [], [] # fits information
     for i_j in range(len(c['j'])):
         for i_L in range(3, c[f][i_j]):
-            j = c['j'][i_j]
-            l = c['L'][:i_L]
-            a = c['A'][i_j][:i_L]
+            j = c['j'][i_j] # harmonic
+            l = c['L'][:i_L] # maximum value ​​of L
+            a = c['A'][i_j][:i_L] # Fourier amplitudes
             def error(p)-> Scalar:
                 return np.sum((a-m(*p, c, int(j), l))**2/(i_L-2))
             print('')
             p = scipy.optimize.fmin(error, (0.02, 200), ftol=1e-10)
             print('')
-            J.append(j)
-            L.append(l[-1])
-            D.append(p[0])
-            R.append(p[1])
-            E.append(error(p))
+            J.append(j) # add harmonic
+            L.append(l[-1]) # add maximum value ​​of L
+            D.append(p[0]) # add density
+            R.append(p[1]) # add outer cut-off radius
+            E.append(error(p)) # add error
     f = {
         'name': m.__name__,
         'j': np.array(J),
@@ -206,75 +208,74 @@ def fit(
 @beartype
 def plot(
     c: dict,
-    n: str,
-    p: str,
+    exstm: str,
+    exdir: str,
+    exfmt: str = 'pdf',
+    title: str = '',
     j: Optional[ScalarList] = None,
-    t: str = "",
     f: dict = None,
     L: Optional[ScalarList] = None,
-    e: str = "pdf",
+
 ) -> None:
     """
     Export a figure with two representations of A(L) and the fits.
 
     Input:
         c: common parameters dictionary
-        n: name of the exported figure
-        p: path where the figure must be exported
+        exstm: export stem
+        exdir: export directory
+        exfmt: export format
+        title: title of the figure
         j: restriction of harmonics to be displayed
-        t: title of the figure
         f: fits information
         L: restriction of maximum L values
-        e: file extension
     """
-    if j is None:
-        j = c['j']
-    data = []
+    if j is None: # no restriction of the harmonics to be displayed is applied
+        j = c['j'] # display all the available harmonics
+    data = [] # list of curves to display
     for h in j:
         i_j = c['index'][h]
         i_L = c['i1'][i_j]
         data.append({
-            'L': c['L'][:i_L],
-            'A': c['A'][i_j][:i_L],
-            'm': '.',
-            'n': "A_{"+str(h)+"}(L)",
-            'c': 'C'+str(h-1),
-            'l': '',
+            'L': c['L'][:i_L], # x variable
+            'A': c['A'][i_j][:i_L], # y variable
+            'm': '.', # marker
+            'n': "A_{"+str(h)+"}(L)", # label
+            'c': 'C'+str(h-1), # color
+            'l': '', # extra information
             })
-
-    if f != None:
-        mask = np.in1d(f['j'], j)
-        if L != None:
-            mask = mask & np.in1d(f['L'], L)
-
-        maskj = f['j'][mask]
-        maskL = f['L'][mask]
-        maskd = f['d'][mask]
-        maskr = f['r'][mask]
-        maske = f['e'][mask]
-        min = c['L'][0]
-        m = f['m']
-        for i in range(len(maskj)):
-            max = maskL[i]
-            d, r = maskd[i], maskr[i]
+    if not f is None: # display fits
+        mask = np.in1d(f['j'], j) # restrict to the requested harmonics
+        if not L is None: # restrict the Fourier variable range
+            mask = mask & np.in1d(f['L'], L) # # restrict to the requested L
+        maskj = f['j'][mask] # apply mask on j
+        maskL = f['L'][mask] # apply mask on L
+        maskd = f['d'][mask] # apply mask on d
+        maskr = f['r'][mask] # apply mask on r
+        maske = f['e'][mask] # apply mask on e
+        min = c['L'][0] # minimum value of L (common to all fits)
+        m = f['m'] # model function
+        for i in range(len(maskj)): # through remaining fits
+            max = maskL[i] # maximum value of L
+            d, r = maskd[i], maskr[i] # density and outer cut-off radius
             v = r" \times 10^{".join(format(maske[i], '1.1e').split('e'))+"}"
-            le = r"$ \sigma^2 ="+v+" $"
-            ll = r"$ L \leq "+str(max)+r" $"
-            h = maskj[i]
-            l = np.linspace(min, max, 20)
+            le = r"$ \sigma^2 ="+v+" $" # fit error
+            ll = r"$ L \leq "+str(max)+r" $" # fit range
+            h = maskj[i] # harmonic
+            l = np.linspace(min, max, 40) # range to plot the fit
             data.append({
-                'L': l,
-                'A': m(d, r, c, int(h), l),
-                'm': '-',
-                'n': "A^"+f['name'][0]+"_{"+str(h)+r"}(L)",
-                'c': 'C'+str(h-1),
-                'l': ", "+le+", "+ll,
+                'L': l, # x variable
+                'A': m(d, r, c, int(h), l), # y variable
+                'm': '-', # marker
+                'n': "A^"+f['name'][0]+"_{"+str(h)+r"}(L)", #  label
+                'c': 'C'+str(h-1), # color
+                'l': ", "+le+", "+ll, # extra information
             })
     # fig
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     fig.subplots_adjust(left=0.06, right=0.98, bottom=0.1)
-    fig.suptitle(t)
-    # ax1
+    fig.suptitle(title)
+    # ax1: A(L) as a function of L (log scale)
     for d in data:
         ax1.plot(
             d['L'],
@@ -287,7 +288,7 @@ def plot(
     ax1.set_xlabel(r"$L \ (nm)$")
     ax1.grid()
     ax1.legend()
-    # ax2
+    # ax2: ln(A(L)) (log scale) as a function of L^2
     for d in data:
         ax2.plot(
             d['L'],
@@ -301,15 +302,17 @@ def plot(
     ax2.grid()
     ax2.legend()
     # export
-    plt.savefig(p+n+'.'+e)
+    plt.savefig(exdir+exstm+'.'+exfmt, format=exfmt)
     plt.close('all')
 
 @beartype
 def export_model(
     m: dict,
     c: dict,
-    p: str,
-    n: str,
+    exdir: str,
+    exstm: str,
+    exfmtd: str = 'csv',
+    exfmtp: str = 'png',
 ) -> None:
     """
     Export the information on fits and the corresponding figures.
@@ -317,15 +320,18 @@ def export_model(
     Input:
         m: dictionary containing information about the model
         c: common quantities
-        p: path where to export the fits outputs
-        n: name of the fits outputs
+        exdir: export directory
+        exstm: export stem
+        exfmtd: data export format
+        exfmtp: plot export format
     """
-    f = fit(m['function'], c, m['filter'])
-    p_f = p+"/"+f['name']+"/"
-    if not os.path.exists(p_f):
-        os.mkdir(p_f)
+    f = fit(m['function'], c, m['filter']) # perform the fits
+    # export a figure for each fit
+    exdir_mod = exdir+"/"+f['name']+"/" # model export directory
+    if not os.path.exists(exdir_mod):
+        os.mkdir(exdir_mod)
     for i in range(len(f['j'])):
-        pn = ("j"
+        fit_stm = ("j"
             + format(f['j'][i], '01.0f')
             + "_"
             + format(f['L'][i], '03.0f')
@@ -333,13 +339,14 @@ def export_model(
         )
         plot(
             c,
-            pn,
-            p_f,
+            fit_stm,
+            exdir_mod,
+            exfmt=exfmtp,
             f=f,
             j=np.array([f['j'][i]]),
             L=np.array([f['L'][i]]),
-            e='png',
         )
+    # export fits data
     fields = (
         'harmonic of g',
         'fit L max [nm]',
@@ -350,37 +357,39 @@ def export_model(
     values = (f['j'], f['L'], f['d']*1e18, f['r'], f['e'],)
     sep = ";"
     fmt = ['%1.0f', '%3.1f', '%1e', '%1e', '%1e']
-    with open(p+n+"_"+f['name']+".csv", "w") as f:
+    with open(exdir+exstm+"_"+f['name']+"."+exfmtd, "w") as f:
         f.write(sep.join(fields)+'\n')
         np.savetxt(f, np.transpose(values), fmt=sep.join(fmt))
 
 @beartype
 def export(
-    s: str,
-    i: str = "",
-    o: str = "",
+    imstm: str,
+    imdir: str = "",
+    exdir: str = "",
+    title: Optional[str] = None,
 ) -> None:
     """
-    Do an analysis of A with the available models.
+    Perform an analysis with the available models.
 
     Input:
-        s: name of the simulation output (file or directory)
-        i: path where s can be found
-        o: path where to export the fits outputs
+        imstm: stem the simulation output (file or directory)
+        imdir: input directory
+        exdir: export directory
+        title: figure title
     """
-    if i!="" and i[-1]!="/":
-        i += "/"
-    if o!="" and o[-1]!="/":
-        o += "/"
-    # title
-    t = " ".join(s.split("_"))
+    if imdir!="" and imdir[-1]!="/":
+        imdir += "/"
+    if exdir!="" and exdir[-1]!="/":
+        exdir += "/"
+    if title is None:
+        title = " ".join(imstm.split("_"))
     # directory
-    o_s = o+s+"/"
-    if not os.path.exists(o_s):
-        os.mkdir(o_s)
+    exdir_stm = exdir+imstm+"/"
+    if not os.path.exists(exdir_stm):
+        os.mkdir(exdir_stm)
     # general
-    c = common(s, i, np.array([1, 2]))
-    plot(c, s, o_s, t=t)
+    c = common(imstm, imdir, np.array([1, 2]))
+    plot(c, imstm, exdir_stm, title=title)
     # models
     analyzed = [
         {'function': models.Groma, 'filter': 'i2',},
@@ -388,4 +397,4 @@ def export(
         {'function': models.Wilkens, 'filter': 'i1',},
     ]
     for m in analyzed:
-        export_model(m, c, o_s, s)
+        export_model(m, c, exdir_stm, imstm)

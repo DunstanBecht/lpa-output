@@ -19,35 +19,35 @@ HQ = { # header quantities and corresponding lines
     'a': 7,
 }
 
-AVGF = "_averaged.dat" # name extension convention for averaged files
-
 @beartype
 def load_file(
     q: List,
-    n: str,
-    p: str,
+    imstm: str,
+    imdir: str = '',
+    imfmt: str = 'dat',
 ) -> Tuple:
     """
-    Return the values of the quantities in q from the file n.
+    Return the values of the quantities in q from an output file.
 
     When the requested quantities are provided in the header, only the
     header of the file is loaded.
 
     Input:
         q: name of the quantities to extract
-        n: name of the simulation output file
-        p: path to the directory where n can be found
+        imstm: stem of the file to import
+        imdir: import directory
+        imfmt: import format
 
     Output:
         v: values of the quantities in the order requested in q
 
-    The following fields can be extracted:
+    The following quantities can be loaded:
         'n' (int): number of dislocations
         's' (int): size of the region of interest [nm]
-        'g' (Vector): diffraction vector hkl direction
-        'z' (Vector): line vector hkl direction
-        'b' (Vector): Burgers vector hkl direction
-        'C' (Scalar): contrast factor
+        'g' (Vector): diffraction vector direction (hkl)
+        'z' (Vector): direction of 'l' (line vector) [uvw]
+        'b' (Vector): Burgers vector direction [uvw]
+        'C' (Scalar): contrast factor [1]
         'a' (Scalar): latice parameter [nm]
         'J' (int): number of diffraction vector harmonics
         'L' (ScalarList): Fourier variable [nm]
@@ -59,28 +59,30 @@ def load_file(
         'err_Sin' (ScalarList): sin error of the first harmonic
         'err_Cos_<j>AL' (ScalarList): cos error of the <j>th harmonic
         'err_Sin_<j>AL' (ScalarList): sin error of the <j>th harmonic
-        '<eps^2>' (ScalarList): mean square strain
+        '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
-    with open(p+n, "r") as f:
-        hd = [f.readline().strip('\n') for i in range(HL)] # header data
+    with open(imdir+imstm+'.'+imfmt, "r") as f: # load the file
+        hv = [f.readline().strip("\n") for i in range(HL)] # header values
         tq = f.readline().split() # table quantities
-        v, all, i = [], False, 0
-        while i<len(q) and not all:
-            if q[i] in tq:
-                all = True
-                td = [l.split() for l in f.readlines()] # table data
-            i += 1
+        v = [] # values of the quantities in q
+        imtab = False # the coefficient table has been imported
+        i = 0 # index on q
+        while i<len(q) and not imtab: # stops when an element is in the table
+            if q[i] in tq: # the quantity must be imported from the table
+                td = [l.split() for l in f.readlines()] # load table data
+                imtab = True # inform that the table has been imported
+            i += 1 # go to next requested quantity
     for n in q:
-        if n in HQ:
-            nv = np.array([eval(v) for v in hd[HQ[n]].split('#')[0].split()])
-            if len(nv) == 1:
-                nv = nv[0]
+        if n in HQ: # the quantity is in the header
+            nv = np.array([eval(v) for v in hv[HQ[n]].split('#')[0].split()])
+            if len(nv) == 1: # if the quantity is a scalar
+                nv = nv[0] # return a scalar
             v.append(nv)
-        elif n in tq:
+        elif n in tq: # the quantity is in the table
             j = tq.index(n)
             v.append(np.array([eval(td[i][j]) for i in range(len(td))]))
-        elif n == 'J':
+        elif n == 'J': # the quantity is the number of harmonics
             v.append((len(tq)-3)//4)
         else:
             raise ValueError("unknown quantity: "+n)
@@ -89,11 +91,11 @@ def load_file(
 @beartype
 def load_directory(
     q: List,
-    n: str,
-    p: str,
+    imstm: str,
+    imdir: str = '',
 ) -> Tuple:
     """
-    Average and return the values of q over the files in directory n.
+    Average and return the values of q over the files of a directory.
 
     The quantity values of each file in the directory are loaded with
     the load_file function and returned averaged. The same quantities
@@ -101,55 +103,75 @@ def load_directory(
 
     Input:
         q: name of the quantities to extract and average
-        n: name of the simulation output directory
-        p: path to the directory where n can be found
+        imstm: stem of the directory to import
+        imdir: import directory
 
     Ouput:
         v: averaged values of the quantities in the order requested
     """
-    d = os.listdir(p+n)
-    dv = [load_file(q, f, p+n+"/") for f in d]
-    v = [sum([dv[i][j] for i in range(len(d))])/len(d) for j in range(len(q))]
+    if imdir!="" and imdir[-1]!="/":
+        imdir += "/"
+    dv = [] # values for each distribution file
+    stm_fmt = [e.split('.') for e in os.listdir(imdir+imstm)] # files
+    for stm, fmt in stm_fmt:
+        dv.append(load_file(q, stm, imdir+imstm+"/", fmt)) # load
+    v = [] # averaged values
+    for j in range(len(q)):
+        v.append(sum([dv[i][j] for i in range(len(stm_fmt))])/len(stm_fmt))
     return tuple(v)
 
 @beartype
 def average_file(
-    s: str,
-    i: str,
-    o: str,
+    imstm: str,
+    imdir: str = '',
+    exdir: Optional[str] = None,
+    exstm: Optional[str] = None,
+    exfmt: str = 'dat',
 ) -> None:
     """
     Export an averaged simulation output file from a directory.
 
     Input:
-        s: name of the simulation output directory
-        i: path where the sample directory can be found
-        o: path where the averaged file will be exported
+        imstm: stem of the directory to average
+        imdir: import directory
+        exdir: export directory
+        exstm: stem of the averaged file
+        exfmt: format of the averaged file
     """
+    if imdir!="" and imdir[-1]!="/": # check import directory
+        imdir += "/"
+    if exdir is None: # default export directory
+        exdir = imdir
+    elif exdir!="" and exdir[-1]!="/": # check export directory
+        exdir += "/"
+    if exstm is None: # default export stem
+        exstm = imstm
     # recover the header in a random file
-    n = os.listdir(i+s)[0]
-    with open(i+s+"/"+n, 'r') as f:
-        h = [f.readline() for i in range(HL)]
-        q = f.readline().split()
-    # averaged values
-    t = load_directory(q, s, i)
-    h[0] = str(load_directory(['n'], s, i)[0])+" #"+h[0].split('#')[1]
+    n = os.listdir(imdir+imstm)[0] # select a file
+    with open(imdir+imstm+"/"+n, 'r') as f: # load the file
+        hv = [f.readline() for i in range(HL)] # header values
+        tq = f.readline().split() # table quantities
+    # average values
+    m = load_directory(['n'], imstm, imdir)[0] # averaged number of disl.
+    hv[0] = str(m)+" #"+h[0].split('#')[1] # update the header information
+    tv = load_directory(tq, imstm, imdir) # averaged table values
     # export file
     fmt = "%5.1f "+" ".join(["%10.7f" for i in range(len(q)-2)])+" %1.1f"
-    with open(o+s+AVGF, "w+") as f:
-        for l in h:
-            f.write(l)
-        f.write(" ".join(q)+"\n")
+    with open(exdir+exstm+'.'+exfmt, "w+") as f:
+        for l in hv:
+            f.write(l) # write heder lines
+        f.write(" ".join(q)+"\n") # write table
         np.savetxt(f, np.transpose(t), fmt=fmt)
 
 @beartype
 def load(
     q: List,
-    n: str,
-    p: str,
+    imstm: str,
+    imdir: str = '',
+    imfmt: str = 'dat',
 ) -> Tuple:
     """
-    Return the values of q from the simulation output n.
+    Return the values of q from a simulation output.
 
     When the results of a sample are requested, an average file is
     created if it does not exist. The same quantities as in function
@@ -157,17 +179,19 @@ def load(
 
     Input:
         q: name of the quantities to extract
-        n: name of the simulation output (file or directory)
-        p: path where n can be found
+        imstm: stem of the output to load
+        imdir: import directory
+        imfmt: import format in case of file output
 
     Output:
         v: averaged values of the quantities in the order requested
     """
-    if os.path.isfile(p+n):
-        return load_file(q, n, p)
-    elif os.path.isdir(p+n) or os.path.exists(p+n+AVGF):
-        if not os.path.exists(p+n+AVGF):
-            average_file(n, p, p)
-        return load_file(q, n+AVGF, p)
+    if imdir!="" and imdir[-1]!="/":
+        imdir += "/"
+    if os.path.isfile(imdir+imstm+'.'+imfmt): # load the averaged file
+        return load_file(q, imstm, imdir, imfmt)
+    elif os.path.isdir(imdir+imstm): # average the directory and load file
+        average_file(imstm, imdir)
+        return load_file(q, imstm, imdir, imfmt)
     else:
-        raise ValueError('nothing found at specified path: '+p+n)
+        raise ValueError('nothing found at specified path: '+imdir+imstm)
