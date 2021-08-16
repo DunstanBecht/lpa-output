@@ -155,6 +155,8 @@ def fit(
     m: Callable,
     c: dict,
     f: str,
+    d: Scalar = 5e14*1e-18,
+    r: Scalar = 200,
 ) -> dict:
     """
     Return information on the fits made of model m on simulation c.
@@ -165,6 +167,8 @@ def fit(
         m: model function
         c: dictionary containing the quantities common to a simulation
         f: lowpass filter name
+        d: initial density [nm^-2]
+        r: initial outer cut-off radius [nm]
 
     Output:
         f: dictionary containing the information on the fits
@@ -187,7 +191,7 @@ def fit(
             def error(p)-> Scalar:
                 return np.sum((a-m(*p, c, int(j), l))**2/(i_L-2))
             print('')
-            p = scipy.optimize.fmin(error, (0.02, 200), ftol=1e-10)
+            p = scipy.optimize.fmin(error, (d, r), ftol=1e-10)
             print('')
             J.append(j) # add harmonic
             L.append(l[-1]) # add maximum value ​​of L
@@ -215,7 +219,6 @@ def plot(
     j: Optional[ScalarList] = None,
     f: dict = None,
     L: Optional[ScalarList] = None,
-
 ) -> None:
     """
     Export a figure with two representations of A(L) and the fits.
@@ -313,6 +316,8 @@ def export_model(
     exstm: str,
     exfmtd: str = 'csv',
     exfmtp: str = 'png',
+    d: Scalar = 5e14*1e-18,
+    r: Scalar = 200,
 ) -> None:
     """
     Export the information on fits and the corresponding figures.
@@ -324,6 +329,8 @@ def export_model(
         exstm: export stem
         exfmtd: data export format
         exfmtp: plot export format
+        d: initial density [nm^-2]
+        r: initial outer cut-off radius [nm]
     """
     f = fit(m['function'], c, m['filter']) # perform the fits
     # export a figure for each fit
@@ -367,6 +374,8 @@ def export(
     imdir: str = "",
     exdir: str = "",
     title: Optional[str] = None,
+    d: Scalar = 5e14*1e-18,
+    r: Scalar = 200,
 ) -> None:
     """
     Perform an analysis with the available models.
@@ -376,6 +385,8 @@ def export(
         imdir: input directory
         exdir: export directory
         title: figure title
+        d: initial density [nm^-2]
+        r: initial outer cut-off radius [nm]
     """
     if imdir!="" and imdir[-1]!="/":
         imdir += "/"
@@ -397,4 +408,4 @@ def export(
         {'function': models.Wilkens, 'filter': 'i1',},
     ]
     for m in analyzed:
-        export_model(m, c, exdir_stm, imstm)
+        export_model(m, c, exdir_stm, imstm, d, r)
