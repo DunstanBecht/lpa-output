@@ -62,7 +62,7 @@ def load_file(
         '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
-    with open(imdir+imstm+'.'+imfmt, "r") as f: # load the file
+    with open(os.path.join(imdir, imstm+'.'+imfmt), "r") as f: # load the file
         hv = [f.readline().strip("\n") for i in range(HL)] # header values
         tq = f.readline().split() # table quantities
         v = [] # values of the quantities in q
@@ -109,12 +109,11 @@ def load_directory(
     Ouput:
         v: averaged values of the quantities in the order requested
     """
-    if imdir!="" and imdir[-1]!="/":
-        imdir += "/"
     dv = [] # values for each distribution file
-    stm_fmt = [e.split('.') for e in os.listdir(imdir+imstm)] # files
+    imdir_stm = os.path.join(imdir, imstm)
+    stm_fmt = [os.path.splitext(e) for e in os.listdir(imdir_stm)] # files
     for stm, fmt in stm_fmt:
-        dv.append(load_file(q, stm, imdir+imstm+"/", fmt)) # load
+        dv.append(load_file(q, stm, imdir_stm, fmt[1:])) # load
     v = [] # averaged values
     for j in range(len(q)):
         v.append(sum([dv[i][j] for i in range(len(stm_fmt))])/len(stm_fmt))
@@ -138,30 +137,27 @@ def average_file(
         exstm: stem of the averaged file
         exfmt: format of the averaged file
     """
-    if imdir!="" and imdir[-1]!="/": # check import directory
-        imdir += "/"
-    if exdir is None: # default export directory
-        exdir = imdir
-    elif exdir!="" and exdir[-1]!="/": # check export directory
-        exdir += "/"
-    if exstm is None: # default export stem
-        exstm = imstm
+    if exdir is None:
+        exdir = imdir # default export directory
+    if exstm is None:
+        exstm = imstm # default export stem
     # recover the header in a random file
-    n = os.listdir(imdir+imstm)[0] # select a file
-    with open(imdir+imstm+"/"+n, 'r') as f: # load the file
+    imdir_stm = os.path.join(imdir, imstm)
+    n = os.listdir(imdir_stm)[0] # select a file
+    with open(os.path.join(imdir_stm, n), 'r') as f: # load the file
         hv = [f.readline() for i in range(HL)] # header values
         tq = f.readline().split() # table quantities
     # average values
     m = load_directory(['n'], imstm, imdir)[0] # averaged number of disl.
-    hv[0] = str(m)+" #"+h[0].split('#')[1] # update the header information
+    hv[0] = str(m)+" #"+hv[0].split('#')[1] # update the header information
     tv = load_directory(tq, imstm, imdir) # averaged table values
     # export file
-    fmt = "%5.1f "+" ".join(["%10.7f" for i in range(len(q)-2)])+" %1.1f"
-    with open(exdir+exstm+'.'+exfmt, "w+") as f:
+    fmt = "%5.1f "+" ".join(["%10.7f" for i in range(len(tq)-2)])+" %1.1f"
+    with open(os.path.join(exdir, exstm+'.'+exfmt), "w+") as f:
         for l in hv:
             f.write(l) # write heder lines
-        f.write(" ".join(q)+"\n") # write table
-        np.savetxt(f, np.transpose(t), fmt=fmt)
+        f.write(" ".join(tq)+"\n") # write table
+        np.savetxt(f, np.transpose(tv), fmt=fmt)
 
 @beartype
 def load(
@@ -186,12 +182,11 @@ def load(
     Output:
         v: averaged values of the quantities in the order requested
     """
-    if imdir!="" and imdir[-1]!="/":
-        imdir += "/"
-    if os.path.isfile(imdir+imstm+'.'+imfmt): # load the averaged file
+    imdir_stm = os.path.join(imdir, imstm)
+    if os.path.isfile(imdir_stm+'.'+imfmt): # load the averaged file
         return load_file(q, imstm, imdir, imfmt)
-    elif os.path.isdir(imdir+imstm): # average the directory and load file
+    elif os.path.isdir(imdir_stm): # average the directory and load file
         average_file(imstm, imdir)
         return load_file(q, imstm, imdir, imfmt)
     else:
-        raise ValueError('nothing found at specified path: '+imdir+imstm)
+        raise ValueError('nothing found at specified path: '+imdir_stm)
