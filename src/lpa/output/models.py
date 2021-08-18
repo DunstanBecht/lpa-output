@@ -77,7 +77,7 @@ def f(
         e: value of Fourier variable divided by the outer cut-off radius [1]
 
     Output:
-        r: value of f on eta
+        r: value of f on e
     """
     e2 = e**2
     def h(v):
@@ -90,7 +90,7 @@ def f(
             - 1/np.pi*(769/180/e+41*e/90+2*e2*e/90)*(1-e2)**(1/2)
             - 1/np.pi*(11/12/e2+7/2+e2/3)*np.arcsin(e) + e2/6)
     else:
-        r = 512/90/pi/eta - (11/24+np.log(2)*eta/4)/eta2
+        r = 512/90/np.pi/e - (11/24+np.log(2)*e/4)/e2
     return r
 
 vf = np.vectorize(f)
