@@ -61,9 +61,9 @@ def lowpass1(
         i1: index at which the noise starts
     """
     i = 1
-    while i<len(a)-1 and a[i-1]>a[i]:
+    while i<len(a) and a[i-1]>a[i]:
         i += 1
-    return min(len(a)-1, i+4)
+    return max(i, min(3, len(a)))
 
 @beartype
 def lowpass2(
@@ -80,21 +80,20 @@ def lowpass2(
     Output:
         i2: index that marks the end of the linear part
     """
-    errors = []
+    # convert
     y = np.log(a)/l**2
-    x = np.stack((np.log(l), np.ones(len(l)))).T
-    #plt.plot(x[:,0], y)
-    #plt.show()
-    for i in range(4, len(l)+1):
-        errors.append(np.linalg.lstsq(x[:i], y[:i], rcond=None)[1][0]/i)
-    #print(errors)
-    #plt.plot(l[3:], errors)
-    #plt.show()
-    m = max(errors)
-    for i in range(len(errors)):
-        if errors[i]/m>0.001:
-            return i + 3
-    return 0
+    x = np.log(l)
+    # filter
+    w = np.ones(len(x))
+    xw = np.stack((x, w)).T
+    if len(a)<3:
+        raise ValueError("not enough points")
+    err = 0
+    i = 3
+    while i<len(a) and np.abs(err/np.mean(y[:i]))<0.001:
+        i += 1
+        err = np.sqrt(np.linalg.lstsq(xw[:i], y[:i], rcond=None)[1][0]/(i-2))
+    return i-1
 
 @beartype
 def common(
@@ -103,7 +102,7 @@ def common(
     j: Optional[ScalarList] = None,
 ) -> dict:
     """
-    Return a set of common quantities related to a simulation.
+    Return a set of common quantities related to a simulation output.
 
     Input:
         imstm: stem of the simulation output
@@ -148,6 +147,7 @@ def common(
     c['A'] = A(imstm, imdir, c['j'])
     c['i1'] = [lowpass1(a) for a in c['A']]
     c['i2'] = [lowpass2(a, c['L']) for a in c['A']]
+    c['name'] = imstm
     c['index'] = {}
     for i in range(len(c['j'])):
         c['index'][c['j'][i]] = i
@@ -187,20 +187,33 @@ def fit(
     """
     J, L, D, R, E, = [], [], [], [], [] # fits information
     for i_j in range(len(c['j'])):
-        for i_L in range(3, c[f][i_j]):
+        i_L = 3
+        failed = False
+        while not failed and i_L<=c[f][i_j]:
             j = c['j'][i_j] # harmonic
             l = c['L'][:i_L] # maximum value ​​of L
             a = c['A'][i_j][:i_L] # Fourier amplitudes
             def error(p)-> Scalar:
                 return np.sum((a-m(*p, c, int(j), l))**2/(i_L-2))
-            print('')
-            p = scipy.optimize.fmin(error, (d, r), ftol=1e-10)
-            print('')
-            J.append(j) # add harmonic
-            L.append(l[-1]) # add maximum value ​​of L
-            D.append(p[0]) # add density
-            R.append(p[1]) # add outer cut-off radius
-            E.append(error(p)) # add error
+            bounds = ((5e4*1e-18, 5e24*1e-18), (1, np.inf))
+            res = scipy.optimize.minimize(
+                error,
+                (d, r),
+                bounds=bounds,
+                method='Nelder-Mead'
+            )
+            if not res.success:
+                print(c['name'], str(l[-1])+"nm", j)
+                print(res.message)
+                failed = True
+            else:
+                p = res.x
+                J.append(j) # add harmonic
+                L.append(l[-1]) # add maximum value ​​of L
+                D.append(p[0]) # add density
+                R.append(p[1]) # add outer cut-off radius
+                E.append(error(p)) # add error
+            i_L += 1
     f = {
         'name': m.__name__,
         'j': np.array(J),
@@ -241,7 +254,7 @@ def plot(
     data = [] # list of curves to display
     for h in j:
         i_j = c['index'][h]
-        i_L = c['i1'][i_j]
+        i_L = min(c['i1'][i_j]+5, len(c['L']))
         data.append({
             'L': c['L'][:i_L], # x variable
             'A': c['A'][i_j][:i_L], # y variable
@@ -259,16 +272,16 @@ def plot(
         maskd = f['d'][mask] # apply mask on d
         maskr = f['r'][mask] # apply mask on r
         maske = f['e'][mask] # apply mask on e
-        min = c['L'][0] # minimum value of L (common to all fits)
+        Lmin = c['L'][0] # minimum value of L (common to all fits)
         m = f['m'] # model function
         for i in range(len(maskj)): # through remaining fits
-            max = maskL[i] # maximum value of L
+            Lmax = maskL[i] # maximum value of L
             d, r = maskd[i], maskr[i] # density and outer cut-off radius
             v = r" \times 10^{".join(format(maske[i], '1.1e').split('e'))+"}"
             le = r"$ \sigma^2 ="+v+" $" # fit error
-            ll = r"$ L \leq "+str(max)+r" $" # fit range
+            ll = r"$ L \leq "+str(Lmax)+r" $" # fit range
             h = maskj[i] # harmonic
-            l = np.linspace(min, max, 40) # range to plot the fit
+            l = np.linspace(Lmin, Lmax, 40) # range to plot the fit
             data.append({
                 'L': l, # x variable
                 'A': m(d, r, c, int(h), l), # y variable
@@ -309,7 +322,7 @@ def plot(
     ax2.legend()
     # export
     plt.savefig(exdir+exstm+'.'+exfmt, format=exfmt)
-    fig.clf()
+    plt.close('all')
 
 @beartype
 def export_model(
@@ -403,6 +416,7 @@ def export(
         os.mkdir(exdir_stm)
     # general
     c = common(imstm, imdir, np.array([1, 2]))
+    # plot output data
     plot(c, imstm, exdir_stm, title=title)
     # models
     analyzed = [
@@ -410,5 +424,6 @@ def export(
         {'function': models.Kamminga, 'filter': 'i2',},
         {'function': models.Wilkens, 'filter': 'i1',},
     ]
+    # fits
     for m in analyzed:
         export_model(m, c, exdir_stm, imstm, d=d, r=r)
