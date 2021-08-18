@@ -5,11 +5,14 @@
 Tools for the analysis of the simulation output.
 """
 
+import matplotlib
 import matplotlib.pyplot as plt
 import scipy.optimize
 from . import *
 from . import collect
 from . import models
+
+matplotlib.use("Agg")
 
 @beartype
 def A(
@@ -306,7 +309,7 @@ def plot(
     ax2.legend()
     # export
     plt.savefig(exdir+exstm+'.'+exfmt, format=exfmt)
-    plt.close('all')
+    fig.clf()
 
 @beartype
 def export_model(
@@ -408,4 +411,4 @@ def export(
         {'function': models.Wilkens, 'filter': 'i1',},
     ]
     for m in analyzed:
-        export_model(m, c, exdir_stm, imstm, d, r)
+        export_model(m, c, exdir_stm, imstm, d=d, r=r)
