@@ -11,7 +11,7 @@ each fit we can calculate the density predicted by the model.
 """
 
 __author__ = "Dunstan Becht"
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 
 import os
 import sys
