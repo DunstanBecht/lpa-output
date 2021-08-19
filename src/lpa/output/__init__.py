@@ -4,7 +4,7 @@
 """
 Tools for the analysis of X-ray diffraction simulation output.
 
-After the simulation, the output file containing the cos and sin
+After the simulation, the output files containing the cos and sin
 coefficients of Fourier analysis can be studied with this package.
 The different models are then fitted to the simulation results and for
 each fit we can calculate the density predicted by the model.
@@ -17,11 +17,7 @@ import os
 import sys
 import numpy as np
 from typing import Union, Optional, NewType, Any
-try:
-    from beartype import beartype
-except:
-    def beartype(function):
-        return function
+from beartype import beartype
 
 if sys.version_info[0]>=3 and sys.version_info[1]>=9:
     from collections.abc import Callable
@@ -32,8 +28,10 @@ else:
     from typing import List
     from typing import Tuple
 
+# scalar and vectors
 Scalar = Union[int, float, np.intc]
 Vector = np.ndarray # shape: (n,)
+# sets
 ScalarList = np.ndarray # shape: (...,)
 ScalarListList = list
 VectorList = np.ndarray # shape: (..., n)
