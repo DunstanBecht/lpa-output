@@ -10,13 +10,13 @@ from . import *
 HL = 8 # number of lines in the header
 
 HQ = { # header quantities and corresponding lines
-    'n': 0,
-    's': 2,
-    'g': 3,
-    'z': 4,
-    'b': 5,
-    'C': 6,
-    'a': 7,
+    'n': 0, # number of dislocations
+    's': 2, # size of the region of interest [nm]
+    'g': 3, # diffraction vector direction (hkl)
+    'z': 4, # direction of 'l' (line vector) [uvw]
+    'b': 5, # Burgers vector direction [uvw]
+    'C': 6, # contrast factor [1]
+    'a': 7, # latice parameter [nm]
 }
 
 @beartype
@@ -113,7 +113,7 @@ def load_directory(
     imdir_stm = os.path.join(imdir, imstm)
     stm_fmt = [os.path.splitext(e) for e in os.listdir(imdir_stm)] # files
     for stm, fmt in stm_fmt:
-        dv.append(load_file(q, stm, imdir_stm, fmt[1:])) # load
+        dv.append(load_file(q, stm, imdir_stm, fmt[1:])) # store loaded data
     v = [] # averaged values
     for j in range(len(q)):
         v.append(sum([dv[i][j] for i in range(len(stm_fmt))])/len(stm_fmt))
@@ -141,9 +141,9 @@ def average_file(
         exdir = imdir # default export directory
     if exstm is None:
         exstm = imstm # default export stem
-    # recover the header in a random file
-    imdir_stm = os.path.join(imdir, imstm)
-    n = os.listdir(imdir_stm)[0] # select a file
+    # recover the header in the first file
+    imdir_stm = os.path.join(imdir, imstm) # output directory
+    n = os.listdir(imdir_stm)[0] # select the first file
     with open(os.path.join(imdir_stm, n), 'r') as f: # load the file
         hv = [f.readline() for i in range(HL)] # header values
         tq = f.readline().split() # table quantities
@@ -189,4 +189,4 @@ def load(
         average_file(imstm, imdir)
         return load_file(q, imstm, imdir, imfmt)
     else:
-        raise ValueError('nothing found at specified path: '+imdir_stm)
+        raise ValueError("nothing found at specified path: "+imdir_stm)

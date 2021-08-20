@@ -30,7 +30,7 @@ def Groma(
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j]
+    i = c['index'][j] # index of the harmonic in c
     jgb, jg2, b2, C = c['jgb'][i], c['jg2'][i], c['b2'], c['C']
     k = np.pi/2*jg2*b2*C*d
     D = k * (np.log(l)-np.log(jgb*r))
@@ -57,7 +57,7 @@ def Kamminga(
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j]
+    i = c['index'][j] # index of the harmonic in c
     jgb, jg2, b2, C = c['jgb'][i], c['jg2'][i], c['b2'], c['C']
     z, g = c['z'], c['g']
     nz, ng = np.linalg.norm(z), np.linalg.norm(g)
@@ -116,7 +116,7 @@ def Wilkens(
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j]
+    i = c['index'][j] # index of the harmonic in c
     jg2, b2, C = c['jg2'][i], c['b2'], c['C']
     k = np.pi/2*jg2*b2*C*d
     D = -k * vf(np.exp(1/4)*l/2/r)

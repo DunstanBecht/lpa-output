@@ -7,7 +7,8 @@ Tools for the analysis of X-ray diffraction simulation output.
 After the simulation, the output files containing the cos and sin
 coefficients of Fourier analysis can be studied with this package.
 The different models are then fitted to the simulation results and for
-each fit we can calculate the density predicted by the model.
+each fit we can calculate the density and outer cut-off radius
+predicted by the model.
 """
 
 __author__ = "Dunstan Becht"
@@ -35,3 +36,8 @@ Vector = np.ndarray # shape: (n,)
 ScalarList = np.ndarray # shape: (...,)
 ScalarListList = list
 VectorList = np.ndarray # shape: (..., n)
+# functions
+ModelFunction = Callable[
+    [Scalar, Scalar, dict, int, ScalarList],
+    [ScalarList]
+]
