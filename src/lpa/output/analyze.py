@@ -314,7 +314,7 @@ def export_model(
     exdir: str,
     exstm: str,
     exfmtd: str = 'csv',
-    exfmtp: str = 'png',
+    exfmtf: str = 'png',
     title: Optional[str] = None,
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
@@ -328,7 +328,8 @@ def export_model(
         exdir: export directory
         exstm: export stem
         exfmtd: data export format
-        exfmtp: plot export format
+        exfmtf: fits export format
+        title: title of the plots
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
     """
@@ -345,14 +346,14 @@ def export_model(
             + "nm"
         )
         plot(
-            c,
-            fit_stm,
-            exdir_mod,
-            exfmt=exfmtp,
-            title=title,
-            f=f,
-            j=np.array([f['j'][i]]),
-            L=np.array([f['L'][i]]),
+            c, # output data
+            fit_stm, # stem of the fit
+            exdir_mod, # model export directory
+            exfmt=exfmtf, # plot export format
+            title=title, # plot title
+            f=f, # fits
+            j=np.array([f['j'][i]]), # restriction of the harmonic
+            L=np.array([f['L'][i]]), # restriction of the maximum value of L
         )
     # export fits data
     fields = (
@@ -375,6 +376,9 @@ def export(
     imdir: str = "",
     exdir: str = "",
     title: Optional[str] = None,
+    exfmtd: str = 'csv',
+    exfmto: str = 'pdf',
+    exfmtf: str = 'png',
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
     j: ScalarList = np.array([1, 2]),
@@ -387,6 +391,9 @@ def export(
         imdir: input directory
         exdir: export directory
         title: figure title
+        exfmtd: data export format
+        exfmto: output export format
+        exfmtf: fits export format
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
     """
@@ -399,7 +406,7 @@ def export(
     # load output data
     c = common(imstm, imdir, j)
     # plot output data
-    plot(c, imstm, exdir_stm, title=title)
+    plot(c, imstm, exdir_stm, title=title, exfmt=exfmto)
     # models
     analyzed = [
         {'function': models.Groma, 'filter': 'f2'},
@@ -408,4 +415,14 @@ def export(
     ]
     # fits
     for m in analyzed:
-        export_model(m, c, exdir_stm, imstm, d=d, r=r, title=title)
+        export_model(
+            m,
+            c,
+            exdir_stm,
+            imstm,
+            d=d,
+            r=r,
+            title=title,
+            exfmtd=exfmtd,
+            exfmtf=exfmtf,
+        )
