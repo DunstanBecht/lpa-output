@@ -44,13 +44,30 @@ def f2(
     y = np.log(a)/l**2
     x = np.log(l)
     # filter
+    return f2_xy(y, x)
+
+@beartype
+def f2_xy(
+    y: ScalarList,
+    x: ScalarList,
+) -> int:
+    """
+    Return the index from which y is no longer linear.
+
+    Input:
+        y: y variable
+        x: x variable
+
+    Output:
+        i2: index that marks the end of the linear part
+    """
     w = np.ones(len(x))
     xw = np.stack((x, w)).T
-    if len(a)<3:
+    if len(x)<3:
         raise ValueError("not enough points")
     err = 0
     i = 3
-    while i<len(a) and np.abs(err/np.ptp(y[:i]))<0.01:
+    while i<len(x) and np.abs(err/np.ptp(y[:i]))<0.01:
         i += 1
         err = np.sqrt(np.linalg.lstsq(xw[:i], y[:i], rcond=None)[1][0]/(i-2))
     return i-1
