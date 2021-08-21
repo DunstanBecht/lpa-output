@@ -70,4 +70,4 @@ def f2_xy(
     while i<len(x) and np.abs(err/np.ptp(y[:i]))<0.01:
         i += 1
         err = np.sqrt(np.linalg.lstsq(xw[:i], y[:i], rcond=None)[1][0]/(i-2))
-    return i-1
+    return i

@@ -49,8 +49,8 @@ def load_file(
         'b' (Vector): Burgers vector direction [uvw]
         'C' (Scalar): contrast factor [1]
         'a' (Scalar): latice parameter [nm]
-        'J' (int): number of diffraction vector harmonics
         'L' (ScalarList): Fourier variable [nm]
+        'A' (ScalarListList): Fourier amplitudes for each harmonic
         'cos_AL' (ScalarList): cos of the first harmonic
         'sin_AL' (ScalarList): sin of the first harmonic
         'Cos_<j>AL' (ScalarList): cos of the <j>th harmonic
@@ -69,7 +69,7 @@ def load_file(
         imtab = False # the coefficient table has been imported
         i = 0 # index on q
         while i<len(q) and not imtab: # stops when an element is in the table
-            if q[i] in tq: # the quantity must be imported from the table
+            if q[i]=='A' or q[i] in tq: # the quantity is in the table
                 td = [l.split() for l in f.readlines()] # load table data
                 imtab = True # inform that the table has been imported
             i += 1 # go to next requested quantity
@@ -84,6 +84,13 @@ def load_file(
             v.append(np.array([eval(td[i][j]) for i in range(len(td))]))
         elif n == 'J': # the quantity is the number of harmonics
             v.append((len(tq)-3)//4)
+        elif n == 'A':
+            v.append(
+                np.array([np.sqrt(
+                    np.array([eval(td[i][4*h+1]) for i in range(len(td))])**2
+                  + np.array([eval(td[i][4*h+3]) for i in range(len(td))])**2
+                ) for h in range((len(tq)-3)//4)])
+            )
         else:
             raise ValueError("unknown quantity: "+n)
     return tuple(v)
@@ -120,46 +127,6 @@ def load_directory(
     return tuple(v)
 
 @beartype
-def average_file(
-    imstm: str,
-    imdir: str = '',
-    exdir: Optional[str] = None,
-    exstm: Optional[str] = None,
-    exfmt: str = 'dat',
-) -> None:
-    """
-    Export an averaged simulation output file from a directory.
-
-    Input:
-        imstm: stem of the directory to average
-        imdir: import directory
-        exdir: export directory
-        exstm: stem of the averaged file
-        exfmt: format of the averaged file
-    """
-    if exdir is None:
-        exdir = imdir # default export directory
-    if exstm is None:
-        exstm = imstm # default export stem
-    # recover the header in the first file
-    imdir_stm = os.path.join(imdir, imstm) # output directory
-    n = os.listdir(imdir_stm)[0] # select the first file
-    with open(os.path.join(imdir_stm, n), 'r') as f: # load the file
-        hv = [f.readline() for i in range(HL)] # header values
-        tq = f.readline().split() # table quantities
-    # average values
-    m = load_directory(['n'], imstm, imdir)[0] # averaged number of disl.
-    hv[0] = str(m)+" #"+hv[0].split('#')[1] # update the header information
-    tv = load_directory(tq, imstm, imdir) # averaged table values
-    # export file
-    fmt = "%5.1f "+" ".join(["%10.7f" for i in range(len(tq)-2)])+" %1.1f"
-    with open(os.path.join(exdir, exstm+'.'+exfmt), "w+") as f:
-        for l in hv:
-            f.write(l) # write heder lines
-        f.write(" ".join(tq)+"\n") # write table
-        np.savetxt(f, np.transpose(tv), fmt=fmt)
-
-@beartype
 def load(
     q: List,
     imstm: str,
@@ -186,7 +153,6 @@ def load(
     if os.path.isfile(imdir_stm+'.'+imfmt): # load the averaged file
         return load_file(q, imstm, imdir, imfmt)
     elif os.path.isdir(imdir_stm): # average the directory and load file
-        average_file(imstm, imdir)
-        return load_file(q, imstm, imdir, imfmt)
+        return load_directory(q, imstm, imdir)
     else:
         raise ValueError("nothing found at specified path: "+imdir_stm)

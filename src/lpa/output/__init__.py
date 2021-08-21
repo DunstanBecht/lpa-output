@@ -34,7 +34,7 @@ Scalar = Union[int, float, np.intc]
 Vector = np.ndarray # shape: (n,)
 # sets
 ScalarList = np.ndarray # shape: (...,)
-ScalarListList = list
+ScalarListList = Union[list, np.ndarray]
 VectorList = np.ndarray # shape: (..., n)
 # functions
 ModelFunction = Callable[

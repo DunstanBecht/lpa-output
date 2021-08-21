@@ -16,39 +16,6 @@ from . import filters
 matplotlib.use("Agg") # to export plots with no bitmap allocation errors
 
 @beartype
-def A(
-    imstm: str,
-    imdir: str,
-    j: ScalarList,
-) -> ScalarListList:
-    """
-    Return the averaged Fourier amplitude for the harmonics j.
-
-    Input:
-        imstm: stem of the simulation output
-        j: harmonics of diffraction vector
-        imdir: import directory
-
-    Output:
-        a: averaged Fourier amplitude for each harmonic in j
-
-    Output example:
-        a = [
-            np.array([A_1(L_1), A_1(L_2), A_1(L_3), ...]),
-            np.array([A_2(L_1), A_2(L_2), A_2(L_3), ...]),
-            ...
-        ]
-    """
-    q = [] # name of the quantities to load
-    for h in j: # harmonic
-        if h == 1: # first order coefficients
-            q += ['cos_AL', 'sin_AL']
-        else: # higher order coefficients
-            q += ['Cos_'+str(h)+'AL', 'Sin_'+str(h)+'AL']
-    m = collect.load(q, imstm, imdir) # load coefficidnt table
-    return [np.sqrt(m[2*h-2]**2+m[2*h-1]**2) for h in j]
-
-@beartype
 def common(
     imstm: str,
     imdir: str,
@@ -85,7 +52,7 @@ def common(
         'index' (dict): reverse indexing for the harmonics
     """
     c = {'name': imstm}
-    q = ['g', 'z', 'b', 'C', 'a', 'J', 'L'] # quantities to load
+    q = ['g', 'z', 'b', 'C', 'a', 'J', 'L', 'A'] # quantities to load
     for k, v in zip(q, collect.load(q, imstm, imdir)):
         c[k] = v # store the loaded quantities
     c['g'] = c['g']/c['a'] # correct diffraction vector norm
@@ -93,7 +60,6 @@ def common(
         c['j'] = np.arange(c['J']) + 1
     else: # restriction of the harmonics to be displayed
         c['j'] = j
-    c['A'] = A(imstm, imdir, c['j'])
     # pre-calculated quantities
     c['jg'] = c['j'].reshape((len(c['j']), 1))*c['g'] # j*g [nm^-1]
     c['jgb'] = np.sum(c['b']*c['jg'], axis=1) # (j*g).b [1]
@@ -129,7 +95,13 @@ def error(
     Output:
         e: error of the fit (sigma^2)
     """
-    return np.sum((m(*p, c, j, l)-a)**2)/(len(l)-2)
+    if m in [models.Groma, models.Kamminga]:
+        output = np.log(a)/l**2
+        model = np.log(m(*p, c, j, l))/l**2
+    elif m in [models.Wilkens]:
+        output = a
+        model = m(*p, c, j, l)
+    return np.sum((output-model)**2)/(len(l)-2)
 
 @beartype
 def fit(
@@ -180,6 +152,7 @@ def fit(
                 method='Nelder-Mead',
                 bounds=b,
                 #options={'maxiter': 1e6},
+                #tol = 1e-18
             )
             if res.success:
                 J.append(j) # store harmonic
