@@ -129,30 +129,25 @@ def load_directory(
 @beartype
 def load(
     q: List,
-    imstm: str,
+    n: str,
     imdir: str = '',
-    imfmt: str = 'dat',
 ) -> Tuple:
     """
     Return the values of q from a simulation output.
 
-    When the results of a sample are requested, an average file is
-    created if it does not exist. The same quantities as in function
-    load_file can be extracted.
-
     Input:
         q: name of the quantities to extract
-        imstm: stem of the output to load
+        n: name of the directory or output file to load
         imdir: import directory
-        imfmt: import format in case of file output
 
     Output:
         v: averaged values of the quantities in the order requested
     """
-    imdir_stm = os.path.join(imdir, imstm)
-    if os.path.isfile(imdir_stm+'.'+imfmt): # load the averaged file
-        return load_file(q, imstm, imdir, imfmt)
-    elif os.path.isdir(imdir_stm): # average the directory and load file
-        return load_directory(q, imstm, imdir)
+    path = os.path.join(imdir, n)
+    if os.path.isfile(path): # load the output file
+        imstm, imfmt = os.path.splitext(n)
+        return load_file(q, imstm, imdir, imfmt[1:])
+    elif os.path.isdir(path): # load and average the output directory
+        return load_directory(q, n, imdir)
     else:
         raise ValueError("nothing found at specified path: "+imdir_stm)

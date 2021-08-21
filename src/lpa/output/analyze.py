@@ -235,7 +235,7 @@ def plot(
             d, r = maskd[i], maskr[i] # density and outer cut-off radius
             v = r" \times 10^{".join(format(maske[i], '1.1e').split('e'))+"}"
             le = r"$ \sigma^2 ="+v+" $" # fit error
-            ll = r"$ L \leq "+str(Lmax)+r" $" # fit range
+            ll = r"$ L \leq "+format(Lmax, '1.1f')+r" $" # fit range
             h = maskj[i] # harmonic
             l = np.linspace(Lmin, Lmax, 40) # range to plot the fit
             data.append({
