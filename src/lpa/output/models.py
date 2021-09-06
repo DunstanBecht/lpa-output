@@ -20,6 +20,11 @@ def GUW(
     """
     Return the Fourier amplitudes calculated with the model GUW.
 
+    "GUW" means "Groma Ungár Wilkens". The model is described in:
+    I. Groma, T. Ungár, and M. Wilkens. “Asymmetric X-ray line
+    broadening of plastically deformed crystals. I. Theory”. In:
+    Journal of Applied Crystallography (1988). ISSN: 0021-8898.
+
     Input:
         d: density of dislocations [nm^-2]
         r: outer cut-off radius [nm]
@@ -46,6 +51,11 @@ def WS(
 ) -> ScalarList:
     """
     Return the Fourier amplitudes calculated with the model WS.
+
+    "WS" means "Wilkens simplified". The model is described in:
+    J.-D. Kamminga and R. Delhez. “Calculation of diffraction line
+    profiles for structures with dislocations”. In: Materials Science
+    Forum (2001). ISSN: 1662-9752.
 
     Input:
         d: density of dislocations [nm^-2]
@@ -105,6 +115,11 @@ def WC(
 ) -> ScalarList:
     """
     Return the Fourier amplitudes calculated with the model WC.
+
+    "WC" means "Wilkens complete". The model is described in:
+    M. Wilkens. Fundamental aspects of dislocation theory. Ed. by J. A.
+    Simmons, R. de Wit, and R. Bullough. Vol. 2. U.S. National Bureau
+    of Standards, 1970, pp. 1195–1221.
 
     Input:
         d: density of dislocations [nm^-2]
