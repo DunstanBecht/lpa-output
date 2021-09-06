@@ -89,19 +89,19 @@ def error(
     Output:
         e: error of the fit (sigma^2)
     """
-    if m in [models.Groma, models.Kamminga]:
+    if m in [models.GUW, models.WS]:
         output = np.log(a)/l**2
         model = np.log(m(*p, o, j, l))/l**2
-    elif m in [models.Wilkens]:
+    else:
         output = a
         model = m(*p, o, j, l)
     return np.sum((output-model)**2)/(len(l)-2)
 
 @beartype
 def fits_data(
-    m: Callable,
-    o: dict,
+    m: ModelFunction,
     f: str,
+    o: dict,
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
     b: Tuple = ((5e10*1e-18, 5e18*1e-18), (1, np.inf)),
@@ -113,8 +113,8 @@ def fits_data(
 
     Input:
         m: model function
-        o: output data dictionary
         f: lowpass filter name
+        o: output data dictionary
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
         b: bounds for (d, r)
@@ -123,7 +123,6 @@ def fits_data(
         f: fits data dictionary
 
     The quantities contained in f are the following:
-        'name' (str): name of the model
         'j' (ScalarList): harmonics
         'L' (ScalarList): maximum values ​​of L [nm]
         'd' (ScalarList): optimal density for the fit [nm^-2]
@@ -163,7 +162,6 @@ def fits_data(
                 failed = True
             i_L += 1
     f = {
-        'name': m.__name__,
         'j': np.array(J), # harmonics
         'L': np.array(L), # maximum values of L [nm]
         'd': np.array(D), # optimal densities [nm^-2]
@@ -236,7 +234,7 @@ def plot(
                 'L': l, # x variable
                 'A': m(d, r, o, int(h), l), # y variable
                 'm': '-', # marker
-                'n': "A^"+f['name'][0]+"_{"+str(h)+r"}(L)", #  label
+                'n': "A^{"+f['m'].__name__+"}_{"+str(h)+r"}(L)", #  label
                 'c': 'C'+str(h-1), # color
                 'l': ", "+le+", "+ll, # extra information
             })
@@ -276,7 +274,7 @@ def plot(
 
 @beartype
 def export_model(
-    m: dict,
+    mf: Union[List, Tuple],
     o: dict,
     exdir: str,
     exstm: str,
@@ -290,7 +288,7 @@ def export_model(
     Export the information on fits and the corresponding figures.
 
     Input:
-        m: dictionary containing information about the model
+        mf: model and filter
         o: output data dictionary
         exdir: export directory
         exstm: export stem
@@ -300,9 +298,10 @@ def export_model(
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
     """
-    f = fits_data(m['function'], o, m['filter'], d=d) # get fits information
+    f = fits_data(*mf, o, d=d, r=r) # get fits information
+    n = mf[0].__name__ # model name
     # export a figure for each fit
-    exdir_mod = exdir+"/"+f['name']+"/" # model export directory
+    exdir_mod = exdir+"/"+n+"/" # model export directory
     if not os.path.exists(exdir_mod):
         os.mkdir(exdir_mod)
     for i in range(len(f['e'])): # through the fits
@@ -333,7 +332,7 @@ def export_model(
     values = (f['j'], f['L'], f['d']*1e18, f['r'], f['e'],)
     sep = ";"
     fmt = ['%1.0f', '%3.1f', '%1e', '%1e', '%1e']
-    with open(os.path.join(exdir, exstm+"_"+f['name']+"."+exfmtd), "w") as f:
+    with open(os.path.join(exdir, exstm+"_"+n+"."+exfmtd), "w") as f:
         f.write(sep.join(fields)+'\n')
         np.savetxt(f, np.transpose(values), fmt=sep.join(fmt))
 
@@ -349,6 +348,11 @@ def export(
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
     j: ScalarList = np.array([1, 2]),
+    a: List = [
+        (models.GUW, 'f2'),
+        (models.WS, 'f2'),
+        (models.WC, 'f1'),
+    ],
 ) -> None:
     """
     Perform an analysis with the available models.
@@ -363,6 +367,8 @@ def export(
         exfmtf: fits export format
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
+        j: restriction of harmonics
+        a: models and filters to analyze
     """
     if title is None:
         title = " ".join(imstm.split("_"))
@@ -374,16 +380,10 @@ def export(
     o = output_data(imstm, imdir)
     # plot output data
     plot(o, imstm, exdir_stm, title=title, exfmt=exfmto)
-    # models
-    analyzed = [
-        {'function': models.Groma, 'filter': 'f2'},
-        {'function': models.Kamminga, 'filter': 'f2'},
-        {'function': models.Wilkens, 'filter': 'f1'},
-    ]
     # fits
-    for m in analyzed:
+    for mf in a:
         export_model(
-            m,
+            mf,
             o,
             exdir_stm,
             imstm,

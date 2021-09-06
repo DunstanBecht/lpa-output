@@ -10,7 +10,7 @@ import scipy.integrate
 from . import *
 
 @beartype
-def Groma(
+def GUW(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -18,7 +18,7 @@ def Groma(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the Groma model.
+    Return the Fourier amplitudes calculated with the model GUW.
 
     Input:
         d: density of dislocations [nm^-2]
@@ -37,7 +37,7 @@ def Groma(
     return np.exp(l**2*D)
 
 @beartype
-def Kamminga(
+def WS(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -45,7 +45,7 @@ def Kamminga(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the Kamminga model.
+    Return the Fourier amplitudes calculated with the model WS.
 
     Input:
         d: density of dislocations [nm^-2]
@@ -71,7 +71,7 @@ def f(
     e: Scalar,
 ) -> Scalar:
     """
-    Intermediary function in the calculation of the Wilkens model.
+    Intermediary function in the calculation of the model WC.
 
     Input:
         e: value of Fourier variable divided by the outer cut-off radius [1]
@@ -96,7 +96,7 @@ def f(
 vf = np.vectorize(f)
 
 @beartype
-def Wilkens(
+def WC(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -104,7 +104,7 @@ def Wilkens(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the Kamminga model.
+    Return the Fourier amplitudes calculated with the model WC.
 
     Input:
         d: density of dislocations [nm^-2]
