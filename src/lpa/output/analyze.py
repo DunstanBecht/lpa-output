@@ -16,66 +16,60 @@ from . import filters
 matplotlib.use("Agg") # to export plots with no bitmap allocation errors
 
 @beartype
-def common(
+def output_data(
     imstm: str,
     imdir: str,
-    j: Optional[ScalarList] = None,
 ) -> dict:
     """
-    Return a set of common quantities related to a simulation output.
+    Return a set of quantities related to a simulation output.
 
     Input:
         imstm: stem of the simulation output
         imdir: import directory
-        j: harmonics studied
 
     Output:
-        c: dictionary containing the quantities common to a output
+        o: output data dictionary
 
-    The quantities contained in c are the following:
-        'name': name of the simulation output
+    The quantities contained in o are the following:
+        'stm': stem of the simulation output
         'g' (Vector): diffraction vector [nm^-1]
         'z' (Vector): line vector direction [uvw]
         'b' (Vector): Burgers vector [nm]
         'C' (Scalar): contrast factor [1]
         'a' (Scalar): latice parameter [nm]
-        'J' (int): number of diffraction vector harmonics
         'L' (ScalarList): Fourier variable [nm]
-        'j' (ScalarList): harmonics studied
+        'A' (ScalarListList): Fourier amplitudes for harmonics in j [1]
+        'j' (ScalarList): harmonics of diffraction vector
         'jg' (VectorList): j*g [nm^-1]
         'jgb' (ScalarList): (j*g).b [1]
         'b2' (Scalar): |b|^2 [nm^2]
         'jg2' (Scalar): |j*g|^2 [nm^-2]
-        'A' (ScalarListList): Fourier amplitudes for harmonics in j [1]
         'f1' (List): index at which the noise starts for each harmonic
         'f2' (List): index of linear zone end for each harmonic
         'index' (dict): reverse indexing for the harmonics
     """
-    c = {'name': imstm}
-    q = ['g', 'z', 'b', 'C', 'a', 'J', 'L', 'A'] # quantities to load
+    o = {'stm': imstm}
+    q = ['g', 'z', 'b', 'C', 'a', 'L', 'A'] # quantities to load
     for k, v in zip(q, collect.load(q, imstm, imdir)):
-        c[k] = v # store the loaded quantities
-    c['g'] = c['g']/c['a'] # correct diffraction vector norm
-    if j is None: # no restriction of the harmonics to be displayed
-        c['j'] = np.arange(c['J']) + 1
-    else: # restriction of the harmonics to be displayed
-        c['j'] = j
+        o[k] = v # store the loaded quantities
+    o['g'] = o['g']/o['a'] # correct diffraction vector norm
+    o['j'] = np.arange(len(o['A'])) + 1 # harmonics
     # pre-calculated quantities
-    c['jg'] = c['j'].reshape((len(c['j']), 1))*c['g'] # j*g [nm^-1]
-    c['jgb'] = np.sum(c['b']*c['jg'], axis=1) # (j*g).b [1]
-    c['b2'] = np.sum(c['b']**2) # |b|^2 [nm^2]
-    c['jg2'] = np.sum(c['jg']**2, axis=1) # |j*g|^2 [nm^-2]
+    o['jg'] = o['j'].reshape((len(o['j']), 1))*o['g'] # j*g [nm^-1]
+    o['jgb'] = np.sum(o['b']*o['jg'], axis=1) # (j*g).b [1]
+    o['b2'] = np.sum(o['b']**2) # |b|^2 [nm^2]
+    o['jg2'] = np.sum(o['jg']**2, axis=1) # |j*g|^2 [nm^-2]
     # filters
-    c['f1'] = [filters.f1(a) for a in c['A']] # suppress noise
-    c['f2'] = [filters.f2(a, c['L']) for a in c['A']] # keep linear area
+    o['f1'] = [filters.f1(a) for a in o['A']] # suppress noise
+    o['f2'] = [filters.f2(a, o['L']) for a in o['A']] # keep linear area
     # reverse index directory
-    c['index'] = {c['j'][i]: i for i in range(len(c['j']))}
-    return c
+    o['index'] = {o['j'][i]: i for i in range(len(o['j']))}
+    return o
 
 @beartype
 def error(
     p: ScalarList,
-    c: dict,
+    o: dict,
     j: int,
     l: ScalarList,
     a: ScalarList,
@@ -86,7 +80,7 @@ def error(
 
     Input:
         p: tuple of the density [nm^-2] and the outer cut-off radius [nm]
-        c: dictionary containing the quantities common to an output
+        o: output data dictionary
         j: harmonic fitted
         l: Fourier variable [nm]
         a: values of the Fourier amplitude
@@ -97,38 +91,38 @@ def error(
     """
     if m in [models.Groma, models.Kamminga]:
         output = np.log(a)/l**2
-        model = np.log(m(*p, c, j, l))/l**2
+        model = np.log(m(*p, o, j, l))/l**2
     elif m in [models.Wilkens]:
         output = a
-        model = m(*p, c, j, l)
+        model = m(*p, o, j, l)
     return np.sum((output-model)**2)/(len(l)-2)
 
 @beartype
-def fit(
+def fits_data(
     m: Callable,
-    c: dict,
+    o: dict,
     f: str,
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
     b: Tuple = ((5e10*1e-18, 5e18*1e-18), (1, np.inf)),
 ) -> dict:
     """
-    Return information on the fits made of model m on simulation c.
+    Return information on the fits made of model m on output o.
 
     A fit is calculated for each harmonic and each interval of L.
 
     Input:
         m: model function
-        c: dictionary containing the quantities common to an output
+        o: output data dictionary
         f: lowpass filter name
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
         b: bounds for (d, r)
 
     Output:
-        f: dictionary containing the information on the fits
+        f: fits data dictionary
 
-    f contains the following fields:
+    The quantities contained in f are the following:
         'name' (str): name of the model
         'j' (ScalarList): harmonics
         'L' (ScalarList): maximum values ​​of L [nm]
@@ -138,17 +132,17 @@ def fit(
         'm' (Callable): model function
     """
     J, L, D, R, E, = [], [], [], [], [] # fits information
-    for i_j in range(len(c['j'])): # harmonic index
+    for i_j in range(len(o['j'])): # harmonic index
         i_L = 3 # index of the maximum value of L for the fit
         failed = False # a fit has failed
-        while not failed and i_L<=c[f][i_j]:
-            j = c['j'][i_j] # harmonic
-            l = c['L'][:i_L] # maximum value ​​of L
-            a = c['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
+        while not failed and i_L<=o[f][i_j]:
+            j = o['j'][i_j] # harmonic
+            l = o['L'][:i_L] # maximum value ​​of L
+            a = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
             res = scipy.optimize.minimize(
                 error,
                 np.array((d, r)),
-                args=(c, int(j), l, a, m),
+                args=(o, int(j), l, a, m),
                 method='Nelder-Mead',
                 bounds=b,
                 #options={'maxiter': 1e6},
@@ -181,7 +175,7 @@ def fit(
 
 @beartype
 def plot(
-    c: dict,
+    o: dict,
     exstm: str,
     exdir: str,
     exfmt: str = 'pdf',
@@ -194,26 +188,26 @@ def plot(
     Export a figure with two representations of A(L) and the fits.
 
     Input:
-        c: common parameters dictionary
+        o: output data dictionary
         exstm: export stem
         exdir: export directory
         exfmt: export format
         title: title of the figure
         j: restriction of harmonics to be displayed
-        f: fits information
+        f: fits data dictionary
         L: restriction of maximum L value of the fits to be displayed
     """
     if not title:
         title = exstm.replace("_", " ")
     if j is None: # no restriction of the harmonics to be displayed is applied
-        j = c['j'] # display all the available harmonics
+        j = o['j'] # display all the available harmonics
     data = [] # list of the information on the curves to display
     for h in j:
-        i_j = c['index'][h] # index of the harmonic in c
-        i_L = min(c['f1'][i_j]+5, len(c['L'])) # output range to be displayed
+        i_j = o['index'][h] # index of the harmonic in c
+        i_L = min(o['f1'][i_j]+5, len(o['L'])) # output range to be displayed
         data.append({
-            'L': c['L'][:i_L], # x variable
-            'A': c['A'][i_j][:i_L], # y variable
+            'L': o['L'][:i_L], # x variable
+            'A': o['A'][i_j][:i_L], # y variable
             'm': '.', # marker
             'n': "A_{"+str(h)+"}(L)", # label
             'c': 'C'+str(h-1), # color
@@ -228,7 +222,7 @@ def plot(
         maskd = f['d'][mask] # apply mask on d
         maskr = f['r'][mask] # apply mask on r
         maske = f['e'][mask] # apply mask on e
-        Lmin = c['L'][0] # minimum value of L (common to all fits)
+        Lmin = o['L'][0] # minimum value of L (common to all fits)
         m = f['m'] # model function
         for i in range(len(maskj)): # through remaining fits
             Lmax = maskL[i] # maximum value of L [nm]
@@ -240,7 +234,7 @@ def plot(
             l = np.linspace(Lmin, Lmax, 40) # range to plot the fit
             data.append({
                 'L': l, # x variable
-                'A': m(d, r, c, int(h), l), # y variable
+                'A': m(d, r, o, int(h), l), # y variable
                 'm': '-', # marker
                 'n': "A^"+f['name'][0]+"_{"+str(h)+r"}(L)", #  label
                 'c': 'C'+str(h-1), # color
@@ -283,7 +277,7 @@ def plot(
 @beartype
 def export_model(
     m: dict,
-    c: dict,
+    o: dict,
     exdir: str,
     exstm: str,
     exfmtd: str = 'csv',
@@ -297,7 +291,7 @@ def export_model(
 
     Input:
         m: dictionary containing information about the model
-        c: common quantities
+        o: output data dictionary
         exdir: export directory
         exstm: export stem
         exfmtd: data export format
@@ -306,7 +300,7 @@ def export_model(
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
     """
-    f = fit(m['function'], c, m['filter'], d=d) # get fits information
+    f = fits_data(m['function'], o, m['filter'], d=d) # get fits information
     # export a figure for each fit
     exdir_mod = exdir+"/"+f['name']+"/" # model export directory
     if not os.path.exists(exdir_mod):
@@ -319,7 +313,7 @@ def export_model(
             + "nm"
         )
         plot(
-            c, # output data
+            o, # output data
             fit_stm, # stem of the fit
             exdir_mod, # model export directory
             exfmt=exfmtf, # plot export format
@@ -377,9 +371,9 @@ def export(
     if not os.path.exists(exdir_stm):
         os.mkdir(exdir_stm)
     # load output data
-    c = common(imstm, imdir, j)
+    o = output_data(imstm, imdir)
     # plot output data
-    plot(c, imstm, exdir_stm, title=title, exfmt=exfmto)
+    plot(o, imstm, exdir_stm, title=title, exfmt=exfmto)
     # models
     analyzed = [
         {'function': models.Groma, 'filter': 'f2'},
@@ -390,7 +384,7 @@ def export(
     for m in analyzed:
         export_model(
             m,
-            c,
+            o,
             exdir_stm,
             imstm,
             d=d,

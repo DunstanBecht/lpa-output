@@ -11,9 +11,9 @@ import numpy as np
 stm = '10_rho5e14m-2_square_2000nm_RDD_d5e-4nm-2_edge_PBCR2_S0'
 ttl = r"10 RDD $ \left( d = 5 \times 10^{-4} \mathrm{nm^{-2}} \right) $"
 
-# test common
-c = analyze.common(stm, 'data', np.array([1]))
-print(c['name'])
+# test output_data
+o = analyze.output_data(stm, 'data')
+print(o['stm'])
 print()
 
 # test exoport

@@ -13,7 +13,7 @@ from . import *
 def Groma(
     d: Scalar,
     r: Scalar,
-    c: dict,
+    o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
@@ -23,15 +23,15 @@ def Groma(
     Input:
         d: density of dislocations [nm^-2]
         r: outer cut-off radius [nm]
-        c: common quantities dictionary
+        o: output data dictionary
         j: selected harmonic
         l: Fourier variable [nm]
 
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j] # index of the harmonic in c
-    jgb, jg2, b2, C = c['jgb'][i], c['jg2'][i], c['b2'], c['C']
+    i = o['index'][j] # index of the harmonic in c
+    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
     k = np.pi/2*jg2*b2*C*d
     D = k * (np.log(l)-np.log(jgb*r))
     return np.exp(l**2*D)
@@ -40,7 +40,7 @@ def Groma(
 def Kamminga(
     d: Scalar,
     r: Scalar,
-    c: dict,
+    o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
@@ -50,16 +50,16 @@ def Kamminga(
     Input:
         d: density of dislocations [nm^-2]
         r: outer cut-off radius [nm]
-        c: common quantities dictionary
+        o: output data dictionary
         j: selected harmonic
         l: Fourier variable [nm]
 
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j] # index of the harmonic in c
-    jgb, jg2, b2, C = c['jgb'][i], c['jg2'][i], c['b2'], c['C']
-    z, g = c['z'], c['g']
+    i = o['index'][j] # index of the harmonic in c
+    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
+    z, g = o['z'], o['g']
     nz, ng = np.linalg.norm(z), np.linalg.norm(g)
     s = np.sqrt(1-(np.dot(z, g)/(nz*ng))**2)
     k = np.pi/2*jg2*b2*C*d
@@ -99,7 +99,7 @@ vf = np.vectorize(f)
 def Wilkens(
     d: Scalar,
     r: Scalar,
-    c: dict,
+    o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
@@ -109,15 +109,15 @@ def Wilkens(
     Input:
         d: density of dislocations [nm^-2]
         r: outer cut-off radius [nm]
-        c: common quantities dictionary
+        o: output data dictionary
         j: selected harmonic
         l: Fourier variable [nm]
 
     Output:
         a: Fourier amplitudes
     """
-    i = c['index'][j] # index of the harmonic in c
-    jg2, b2, C = c['jg2'][i], c['b2'], c['C']
+    i = o['index'][j] # index of the harmonic in c
+    jg2, b2, C = o['jg2'][i], o['b2'], o['C']
     k = np.pi/2*jg2*b2*C*d
     D = -k * vf(np.exp(1/4)*l/2/r)
     AD = np.exp(l**2*D)

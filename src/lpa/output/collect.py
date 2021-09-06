@@ -82,8 +82,6 @@ def load_file(
         elif n in tq: # the quantity is in the table
             j = tq.index(n)
             v.append(np.array([eval(td[i][j]) for i in range(len(td))]))
-        elif n == 'J': # the quantity is the number of harmonics
-            v.append((len(tq)-3)//4)
         elif n == 'A':
             v.append(
                 np.array([np.sqrt(
