@@ -148,4 +148,4 @@ def load(
     elif os.path.isdir(path): # load and average the output directory
         return load_directory(q, n, imdir)
     else:
-        raise ValueError("nothing found at specified path: "+imdir_stm)
+        raise ValueError("nothing found at specified path: "+path)
