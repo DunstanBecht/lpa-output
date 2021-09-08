@@ -308,7 +308,7 @@ def export_model(
     f = fits_data(*mf, o, d=d, r=r, j=j) # get fits data
     n = mf[0].__name__ # model name
     # export a figure for each fit
-    exdir_mod = exdir+"/"+n+"/" # model export directory
+    exdir_mod = exdir+"/fits_plot_"+n+"/" # model export directory
     if not os.path.exists(exdir_mod):
         os.mkdir(exdir_mod)
     for i in range(len(f['e'])): # through the fits
@@ -339,7 +339,7 @@ def export_model(
     values = (f['j'], f['L'], f['d']*1e18, f['r'], f['e'],)
     sep = ";"
     fmt = ['%1.0f', '%3.1f', '%1e', '%1e', '%1e']
-    with open(os.path.join(exdir, exstm+"_"+n+"."+exfmtd), "w") as f:
+    with open(os.path.join(exdir, 'fits_data_'+n+"."+exfmtd), "w") as f:
         f.write(sep.join(fields)+'\n')
         np.savetxt(f, np.transpose(values), fmt=sep.join(fmt))
 
@@ -386,7 +386,7 @@ def export(
     # load output data
     o = output_data(imstm, imdir)
     # plot output data
-    plot(o, imstm, exdir_stm, title=title, exfmt=exfmto, j=j)
+    plot(o, 'output_plot', exdir_stm, title=title, exfmt=exfmto, j=j)
     # fits
     for mf in a:
         export_model(
