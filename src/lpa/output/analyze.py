@@ -105,6 +105,7 @@ def fits_data(
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
     b: Tuple = ((5e10*1e-18, 5e18*1e-18), (1, np.inf)),
+    j: Optional[ScalarList] = None,
 ) -> dict:
     """
     Return information on the fits made of model m on output o.
@@ -118,6 +119,7 @@ def fits_data(
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
         b: bounds for (d, r)
+        j: restriction of harmonics
 
     Output:
         f: fits data dictionary
@@ -131,32 +133,35 @@ def fits_data(
         'm' (Callable): model function
     """
     J, L, D, R, E, = [], [], [], [], [] # fits information
-    for i_j in range(len(o['j'])): # harmonic index
+    if j is None: # no restriction of the harmonics to be displayed is applied
+        j = o['j'] # display all the available harmonics
+    for h in j: # harmonic index
+        i_j = list(o['j']).index(h) # harmonic index in output_data
         i_L = 3 # index of the maximum value of L for the fit
         failed = False # a fit has failed
         while not failed and i_L<=o[f][i_j]:
-            j = o['j'][i_j] # harmonic
-            l = o['L'][:i_L] # maximum value ​​of L
-            a = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
-            res = scipy.optimize.minimize(
+            fj = o['j'][i_j] # harmonic
+            fl = o['L'][:i_L] # maximum value ​​of L
+            fa = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
+            fr = scipy.optimize.minimize(
                 error,
                 np.array((d, r)),
-                args=(o, int(j), l, a, m),
+                args=(o, int(fj), fl, fa, m),
                 method='Nelder-Mead',
                 bounds=b,
                 #options={'maxiter': 1e6},
                 #tol = 1e-18
             )
-            if res.success:
-                J.append(j) # store harmonic
-                L.append(l[-1]) # store maximum value ​​of L [nm]
-                D.append(res.x[0]) # store optimal density [nm^-2]
-                R.append(res.x[1]) # store optimal outer cut-off radius [nm]
-                E.append(res.fun) # store error
+            if fr.success:
+                J.append(fj) # store harmonic
+                L.append(fl[-1]) # store maximum value ​​of L [nm]
+                D.append(fr.x[0]) # store optimal density [nm^-2]
+                R.append(fr.x[1]) # store optimal outer cut-off radius [nm]
+                E.append(fr.fun) # store error
             else:
-                print(("/!\ "+res.message+"\n    "
-                    + "L="+str(l[-1])+"nm "
-                    + "j="+str(j)+" "
+                print(("/!\ "+fr.message+"\n    "
+                    + "L="+str(fl[-1])+"nm "
+                    + "j="+str(fj)+" "
                     + "model="+m.__name__
                 ))
                 failed = True
@@ -283,6 +288,7 @@ def export_model(
     title: Optional[str] = None,
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
+    j: Optional[ScalarList] = None,
 ) -> None:
     """
     Export the information on fits and the corresponding figures.
@@ -297,8 +303,9 @@ def export_model(
         title: title of the plots
         d: initial density [nm^-2]
         r: initial outer cut-off radius [nm]
+        j: restriction of harmonics
     """
-    f = fits_data(*mf, o, d=d, r=r) # get fits information
+    f = fits_data(*mf, o, d=d, r=r, j=j) # get fits data
     n = mf[0].__name__ # model name
     # export a figure for each fit
     exdir_mod = exdir+"/"+n+"/" # model export directory
@@ -347,7 +354,7 @@ def export(
     exfmtf: str = 'png',
     d: Scalar = 5e14*1e-18,
     r: Scalar = 200,
-    j: ScalarList = np.array([1, 2]),
+    j: Optional[ScalarList] = None,
     a: List = [
         (models.GUW, 'f2'),
         (models.WS, 'f2'),
@@ -355,7 +362,7 @@ def export(
     ],
 ) -> None:
     """
-    Perform an analysis with the available models.
+    Perform an analysis for each of the given models.
 
     Input:
         imstm: stem the simulation output (file or directory)
@@ -379,7 +386,7 @@ def export(
     # load output data
     o = output_data(imstm, imdir)
     # plot output data
-    plot(o, imstm, exdir_stm, title=title, exfmt=exfmto)
+    plot(o, imstm, exdir_stm, title=title, exfmt=exfmto, j=j)
     # fits
     for mf in a:
         export_model(
@@ -392,4 +399,5 @@ def export(
             title=title,
             exfmtd=exfmtd,
             exfmtf=exfmtf,
+            j=j,
         )
