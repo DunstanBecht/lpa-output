@@ -21,25 +21,24 @@ HQ = { # header quantities and corresponding lines
 
 @beartype
 def load_file(
-    q: List,
-    imstm: str,
-    imdir: str = '',
-    imfmt: str = 'dat',
+    qtynam: Union[List, Tuple],
+    impstm: str,
+    **kwargs,
 ) -> Tuple:
     """
-    Return the values of the quantities in q from an output file.
+    Return the values of the quantities in qtynam from the output file.
 
     When the requested quantities are provided in the header, only the
     header of the file is loaded.
 
     Input:
-        q: name of the quantities to extract
-        imstm: stem of the file to import
-        imdir: import directory
-        imfmt: import format
+        qtynam: name of the quantities to extract from the file
+        impstm: stem of the file to import
+      **impdir: import directory (default: '')
+      **impfmt: import format (default: 'dat')
 
     Output:
-        v: values of the quantities in the order requested in q
+        qtyval: quantity values in the order of qtynam
 
     The following quantities can be loaded:
         'n' (int): number of dislocations
@@ -62,90 +61,103 @@ def load_file(
         '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
-    with open(os.path.join(imdir, imstm+'.'+imfmt), "r") as f: # load the file
+    # optional parameters
+    impdir = kwargs.pop('impdir', '') # import directory
+    impfmt = kwargs.pop('impfmt', 'dat') # import format
+    # load file
+    with open(os.path.join(impdir, impstm+'.'+impfmt), "r") as f:
         hv = [f.readline().strip("\n") for i in range(HL)] # header values
         tq = f.readline().split() # table quantities
-        v = [] # values of the quantities in q
-        imtab = False # the coefficient table has been imported
-        i = 0 # index on q
-        while i<len(q) and not imtab: # stops when an element is in the table
-            if q[i]=='A' or q[i] in tq: # the quantity is in the table
+        imptab = False # the coefficient table has been imported
+        i = 0 # index on qtynam
+        while i<len(qtynam) and not imptab: # stops when element is in table
+            if qtynam[i]=='A' or qtynam[i] in tq: # the quantity is in table
                 td = [l.split() for l in f.readlines()] # load table data
-                imtab = True # inform that the table has been imported
+                imptab = True # inform that the table has been imported
             i += 1 # go to next requested quantity
-    for n in q:
-        if n in HQ: # the quantity is in the header
-            nv = np.array([eval(v) for v in hv[HQ[n]].split('#')[0].split()])
-            if len(nv) == 1: # if the quantity is a scalar
-                nv = nv[0] # return a scalar
-            v.append(nv)
-        elif n in tq: # the quantity is in the table
-            j = tq.index(n)
-            v.append(np.array([eval(td[i][j]) for i in range(len(td))]))
-        elif n == 'A':
-            v.append(
+    qtyval = [] # values of the quantities in qtynam
+    # sort values
+    for nam in qtynam:
+        if nam in HQ: # the quantity is in the header
+            v = np.array([eval(v) for v in hv[HQ[nam]].split('#')[0].split()])
+            if len(v) == 1: # if the quantity is a scalar
+                v = v[0] # return a scalar
+            qtyval.append(v)
+        elif nam in tq: # the quantity is in the table
+            j = tq.index(nam)
+            qtyval.append(np.array([eval(td[i][j]) for i in range(len(td))]))
+        elif nam == 'A':
+            qtyval.append(
                 np.array([np.sqrt(
                     np.array([eval(td[i][4*h+1]) for i in range(len(td))])**2
                   + np.array([eval(td[i][4*h+3]) for i in range(len(td))])**2
                 ) for h in range((len(tq)-3)//4)])
             )
         else:
-            raise ValueError("unknown quantity: "+n)
-    return tuple(v)
+            raise ValueError("unknown quantity: "+nam)
+    return tuple(qtyval)
 
 @beartype
 def load_directory(
-    q: List,
-    imstm: str,
-    imdir: str = '',
+    qtynam: Union[List, Tuple],
+    impstm: str,
+    **kwargs,
 ) -> Tuple:
     """
-    Average and return the values of q over the files of a directory.
+    Average and return the values of qtynam over multiple files.
 
     The quantity values of each file in the directory are loaded with
     the load_file function and returned averaged. The same quantities
     as in function load_file can be extracted.
 
     Input:
-        q: name of the quantities to extract and average
-        imstm: stem of the directory to import
-        imdir: import directory
+        qtynam: name of the quantities to extract and average
+        impstm: stem of the directory to import
+      **impdir: import directory (default: see load_file)
 
     Ouput:
-        v: averaged values of the quantities in the order requested
+        qtyval: averaged quantity values in the order of qtynam
     """
+    # optional parameters
+    impdir = kwargs.pop('impdir', '') # import directory
+    # load files
     dv = [] # values for each distribution file
-    imdir_stm = os.path.join(imdir, imstm)
-    stm_fmt = [os.path.splitext(e) for e in os.listdir(imdir_stm)] # files
+    dir_stm = os.path.join(impdir, impstm) # files directory
+    stm_fmt = [os.path.splitext(e) for e in os.listdir(dir_stm)] # files
     for stm, fmt in stm_fmt:
-        dv.append(load_file(q, stm, imdir_stm, fmt[1:])) # store loaded data
-    v = [] # averaged values
-    for j in range(len(q)):
-        v.append(sum([dv[i][j] for i in range(len(stm_fmt))])/len(stm_fmt))
-    return tuple(v)
+        val = load_file(qtynam, stm, impdir=dir_stm, impfmt=fmt[1:]) # values
+        dv.append(val) # store data
+    qtyval = [] # averaged values
+    for j in range(len(qtynam)):
+        lstval = [dv[i][j] for i in range(len(stm_fmt))] # values to average
+        qtyval.append(sum(lstval)/len(lstval)) # store mean
+    return tuple(qtyval)
 
 @beartype
 def load(
-    q: List,
-    n: str,
-    imdir: str = '',
+    qtynam: Union[List, Tuple],
+    impnam: str,
+    **kwargs,
 ) -> Tuple:
     """
-    Return the values of q from a simulation output.
+    Return the values of qtynam from a simulation output file or dir.
 
     Input:
-        q: name of the quantities to extract
-        n: name of the directory or output file to load
-        imdir: import directory
+        qtynam: name of the quantities to extract
+        impnam: name of the directory or output file to load
+      **impdir: import directory (default: see load_file)
 
     Output:
-        v: averaged values of the quantities in the order requested
+        qtyval: quantity values in the order of qtynam
     """
-    path = os.path.join(imdir, n)
-    if os.path.isfile(path): # load the output file
-        imstm, imfmt = os.path.splitext(n)
-        return load_file(q, imstm, imdir, imfmt[1:])
-    elif os.path.isdir(path): # load and average the output directory
-        return load_directory(q, n, imdir)
+    # optional parameters
+    impdir = kwargs.pop('impdir', '') # import directory
+    # load output
+    outpth = os.path.join(impdir, impnam) # path to the output
+    if os.path.isfile(outpth): # load the output file
+        stm, fmt = os.path.splitext(impnam)
+        return load_file(qtynam, stm, impdir=impdir, impfmr=fmt[1:])
+    elif os.path.isdir(outpth): # load and average the output directory
+        return load_directory(qtynam, impnam, impdir=impdir)
     else:
-        raise ValueError("nothing found at specified path: "+path)
+        raise ValueError("nothing found at specified path: "+outpth)
