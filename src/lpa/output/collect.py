@@ -64,6 +64,8 @@ def load_file(
     # optional parameters
     impdir = kwargs.pop('impdir', '') # import directory
     impfmt = kwargs.pop('impfmt', 'dat') # import format
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # load file
     with open(os.path.join(impdir, impstm+'.'+impfmt), "r") as f:
         hv = [f.readline().strip("\n") for i in range(HL)] # header values
@@ -120,6 +122,8 @@ def load_directory(
     """
     # optional parameters
     impdir = kwargs.pop('impdir', '') # import directory
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # load files
     dv = [] # values for each distribution file
     dir_stm = os.path.join(impdir, impstm) # files directory
@@ -152,11 +156,13 @@ def load(
     """
     # optional parameters
     impdir = kwargs.pop('impdir', '') # import directory
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # load output
     outpth = os.path.join(impdir, impnam) # path to the output
     if os.path.isfile(outpth): # load the output file
         stm, fmt = os.path.splitext(impnam)
-        return load_file(qtynam, stm, impdir=impdir, impfmr=fmt[1:])
+        return load_file(qtynam, stm, impdir=impdir, impfmt=fmt[1:])
     elif os.path.isdir(outpth): # load and average the output directory
         return load_directory(qtynam, impnam, impdir=impdir)
     else:

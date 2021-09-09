@@ -62,7 +62,7 @@ def output_data(
     outdat['jg2'] = np.sum(outdat['jg']**2, axis=1) # |j*g|^2 [nm^-2]
     # filters
     outdat['f1'] = [filters.f1(a) for a in outdat['A']] # suppress noise
-    outdat['f2'] = [filters.f2(a, outdat['L']) for a in outdat['A']] # keep linear area
+    outdat['f2'] = [filters.f2(a, outdat['L']) for a in outdat['A']] # linear
     # reverse index directory
     outdat['index'] = {outdat['j'][i]: i for i in range(len(outdat['j']))}
     return outdat
@@ -135,6 +135,8 @@ def fits_data(
     r = kwargs.pop('r', 200) # initial outer cut-off radius [nm]
     b = kwargs.pop('b', ((5e10*1e-18, 5e18*1e-18), (1, np.inf))) # bounds
     j = kwargs.pop('j', o['j']) # harmonics to fit
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # fit
     J, L, D, R, E, = [], [], [], [], [] # fits information
     for h in j: # harmonic index
@@ -308,9 +310,12 @@ def export_model(
     fmtdat = kwargs.pop('fmtdat', 'dat') # fits export format
     fmtfit = kwargs.pop('fmtfit', 'png') # fits export format
     title = kwargs.pop('title', modnam+" "+outdat['stm']) # fits title
-    kw1 = {key: val for key, val in kwargs.items() if key in ('d', 'r', 'j')}
+    keys = [key for key in kwargs]
+    kw = {key: kwargs.pop(key) for key in keys if key in ('d', 'r', 'j')}
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # collect
-    fitdat = fits_data(modfun, modflt, outdat, **kw1) # get fits data
+    fitdat = fits_data(modfun, modflt, outdat, **kw) # get fits data
     # export a figure for each fit
     moddir = expdir+"/fits_plot_"+modnam+"/" # model export directory
     if not os.path.exists(moddir):
@@ -385,8 +390,14 @@ def export(
         (models.WS, 'f2'),
         (models.WC, 'f1'),
     ])
-    kw1 = {key: val for key, val in kwargs.items() if key in ('d', 'r', 'j', 'fmtfit', 'fmtdat')}
-    kw2 = {key: val for key, val in kwargs.items() if key in ('title', 'j')}
+    keys = [key for key in kwargs]
+    kw1 = {
+        key: kwargs.pop(key) for key in keys
+        if key in ('d', 'r', 'j', 'fmtfit', 'fmtdat', 'title')
+    }
+    kw2 = {key: val for key, val in kw1.items() if key in ('title', 'j')}
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))
     # export directory
     dirstm = os.path.join(expdir, expstm)
     if not os.path.exists(dirstm):
