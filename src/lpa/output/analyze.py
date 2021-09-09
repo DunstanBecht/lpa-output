@@ -136,7 +136,7 @@ def fits_data(
     if j is None: # no restriction of the harmonics to be displayed is applied
         j = o['j'] # display all the available harmonics
     for h in j: # harmonic index
-        i_j = list(o['j']).index(h) # harmonic index in output_data
+        i_j = o['index'][h] # harmonic index in output_data
         i_L = 3 # index of the maximum value of L for the fit
         failed = False # a fit has failed
         while not failed and i_L<=o[f][i_j]:
@@ -283,7 +283,7 @@ def export_model(
     o: dict,
     exdir: str,
     exstm: str,
-    exfmtd: str = 'csv',
+    exfmtd: str = 'txt',
     exfmtf: str = 'png',
     title: Optional[str] = None,
     d: Scalar = 5e14*1e-18,
@@ -330,15 +330,15 @@ def export_model(
         )
     # export fits data
     fields = (
-        'harmonic of g',
-        'fit L max [nm]',
-        'rho [m-2]',
-        'Re [nm]',
+        'harmonic',
+        'Lmax[nm]',
+        'rho[m-2]',
+        'Re[nm]',
         'error',
     )
     values = (f['j'], f['L'], f['d']*1e18, f['r'], f['e'],)
-    sep = ";"
-    fmt = ['%1.0f', '%3.1f', '%1e', '%1e', '%1e']
+    sep = " "
+    fmt = ['%1.0f', '%5.1f', '%1e', '%1e', '%1e']
     with open(os.path.join(exdir, 'fits_data_'+n+"."+exfmtd), "w") as f:
         f.write(sep.join(fields)+'\n')
         np.savetxt(f, np.transpose(values), fmt=sep.join(fmt))
