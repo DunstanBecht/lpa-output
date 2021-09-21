@@ -24,14 +24,14 @@ def output_data(
     Return a set of quantities related to a simulation output.
 
     Input:
-        impstm: stem of the simulation output
+        impstm (stm): stem of the simulation output
       **impdir: import directory (default: see collect.load_file)
 
     Output:
         outdat: output data dictionary
 
     The quantities contained in outdat are the following:
-        'stm': stem of the simulation output
+        'stm' (str): stem of the simulation output
         'g' (Vector): diffraction vector [nm^-1]
         'z' (Vector): line vector direction [uvw]
         'b' (Vector): Burgers vector [nm]
@@ -68,7 +68,7 @@ def output_data(
     return outdat
 
 @beartype
-def error(
+def standard_error(
     p: ScalarList,
     o: dict,
     j: int,
@@ -77,7 +77,7 @@ def error(
     m: ModelFunction,
 ) -> Scalar:
     """
-    Return the error of the fit of m on a.
+    Return the standard error of the fit of m on a for harmonic j.
 
     Input:
         p: tuple of the density [nm^-2] and the outer cut-off radius [nm]
@@ -88,15 +88,17 @@ def error(
         m: function of the model fitted
 
     Output:
-        e: error of the fit (sigma^2)
+        e: standard error of the fit (sigma^2)
     """
-    if m in [models.GUW, models.WS]:
-        output = np.log(a)/l**2
-        model = np.log(m(*p, o, j, l))/l**2
+    am = m(*p, o, j, l) # model values
+    if m in (models.GUW, models.WS):
+        e = np.log(a)/l**2 - np.log(m(*p, o, j, l))/l**2
+        i = np.arange(1, len(l)+1)
+        w = len(l)*np.log((i+1)/i)/np.log(len(l)+1)
     else:
-        output = a
-        model = m(*p, o, j, l)
-    return np.sum((output-model)**2)/(len(l)-2)
+        e = a - am
+        w = 1
+    return np.sum(w*e**2)/(len(l)-2)
 
 @beartype
 def fits_data(
@@ -148,7 +150,7 @@ def fits_data(
             fl = o['L'][:i_L] # maximum value ​​of L
             fa = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
             fr = scipy.optimize.minimize(
-                error,
+                standard_error,
                 np.array((d, r)),
                 args=(o, int(fj), fl, fa, m),
                 method='Nelder-Mead',
@@ -214,7 +216,7 @@ def plot(
         data.append({
             'L': outdat['L'][:i_L], # x variable
             'A': outdat['A'][i_j][:i_L], # y variable
-            'm': '.', # marker
+            'm': '.-' if fitdat is None else '.', # marker
             'n': "A_{"+str(h)+"}(L)", # label
             'c': 'C'+str(h-1), # color
             'l': '', # extra information
@@ -383,7 +385,7 @@ def export(
     # optional parameters
     impdir = kwargs.pop('impdir', '') # import directory
     expdir = kwargs.pop('expdir', '') # export directory
-    expstm = kwargs.pop('expstm', impstm) # export file stem
+    expstm = kwargs.pop('expstm', impstm+'_analysis') # export file stem
     fmtout = kwargs.pop('fmtout', 'pdf') # fits export format
     funflt = kwargs.pop('funflt', [
         (models.GUW, 'f2'),
