@@ -10,7 +10,7 @@ import scipy.integrate
 from . import *
 
 @beartype
-def GUW(
+def GUW2(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -18,12 +18,12 @@ def GUW(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model GUW.
+    Return the Fourier amplitudes calculated with the model GUW2.
 
-    "GUW" means "Groma Ungár Wilkens". The model is described in:
-    I. Groma, T. Ungár, and M. Wilkens. “Asymmetric X-ray line
-    broadening of plastically deformed crystals. I. Theory”. In:
-    Journal of Applied Crystallography (1988). ISSN: 0021-8898.
+    The model is described in: I. Groma, T. Ungár, and M. Wilkens.
+    “Asymmetric X-ray line broadening of plastically deformed crystals.
+    I. Theory”. In: Journal of Applied Crystallography (1988). ISSN:
+    0021-8898.
 
     Input:
         d: density of dislocations [nm^-2]
@@ -42,7 +42,7 @@ def GUW(
     return np.exp(l**2*D)
 
 @beartype
-def WS(
+def W2(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -50,12 +50,11 @@ def WS(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model WS.
+    Return the Fourier amplitudes calculated with the model W2.
 
-    "WS" means "Wilkens simplified". The model is described in:
-    J.-D. Kamminga and R. Delhez. “Calculation of diffraction line
-    profiles for structures with dislocations”. In: Materials Science
-    Forum (2001). ISSN: 1662-9752.
+    The model is described in: J.-D. Kamminga and R. Delhez.
+    “Calculation of diffraction line profiles for structures with
+    dislocations”. In: Materials Science Forum (2001). ISSN: 1662-9752.
 
     Input:
         d: density of dislocations [nm^-2]
@@ -81,7 +80,7 @@ def f(
     e: Scalar,
 ) -> Scalar:
     """
-    Intermediary function in the calculation of the model WC.
+    Intermediary function in the calculation of the model W1.
 
     Input:
         e: value of Fourier variable divided by the outer cut-off radius [1]
@@ -106,7 +105,7 @@ def f(
 vf = np.vectorize(f)
 
 @beartype
-def WC(
+def W1(
     d: Scalar,
     r: Scalar,
     o: dict,
@@ -114,12 +113,12 @@ def WC(
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model WC.
+    Return the Fourier amplitudes calculated with the model W1.
 
-    "WC" means "Wilkens complete". The model is described in:
-    M. Wilkens. Fundamental aspects of dislocation theory. Ed. by J. A.
-    Simmons, R. de Wit, and R. Bullough. Vol. 2. U.S. National Bureau
-    of Standards, 1970, pp. 1195–1221.
+    The model is described in: M. Wilkens. Fundamental aspects of
+    dislocation theory. Ed. by J. A. Simmons, R. de Wit, and R.
+    Bullough. Vol. 2. U.S. National Bureau of Standards, 1970, pp.
+    1195–1221.
 
     Input:
         d: density of dislocations [nm^-2]

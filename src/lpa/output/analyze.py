@@ -75,6 +75,7 @@ def standard_error(
     l: ScalarList,
     a: ScalarList,
     m: ModelFunction,
+    W: bool,
 ) -> Scalar:
     """
     Return the standard error of the fit of m on a for harmonic j.
@@ -86,12 +87,13 @@ def standard_error(
         l: Fourier variable [nm]
         a: values of the Fourier amplitude
         m: function of the model fitted
+        W: weigh the points
 
     Output:
         e: standard error of the fit (sigma^2)
     """
     am = m(*p, o, j, l) # model values
-    if m in (models.GUW, models.WS):
+    if W:
         e = np.log(a)/l**2 - np.log(m(*p, o, j, l))/l**2
         i = np.arange(1, len(l)+1)
         w = len(l)*np.log((i+1)/i)/np.log(len(l)+1)
@@ -152,7 +154,7 @@ def fits_data(
             fr = scipy.optimize.minimize(
                 standard_error,
                 np.array((d, r)),
-                args=(o, int(fj), fl, fa, m),
+                args=(o, int(fj), fl, fa, m, f=='f2'),
                 method='Nelder-Mead',
                 bounds=b,
             )
@@ -388,9 +390,9 @@ def export(
     expstm = kwargs.pop('expstm', impstm+'_analysis') # export file stem
     fmtout = kwargs.pop('fmtout', 'pdf') # fits export format
     funflt = kwargs.pop('funflt', [
-        (models.GUW, 'f2'),
-        (models.WS, 'f2'),
-        (models.WC, 'f1'),
+        (models.GUW2, 'f2'),
+        (models.W1, 'f1'),
+        (models.W2, 'f2'),
     ])
     keys = [key for key in kwargs]
     kw1 = {
