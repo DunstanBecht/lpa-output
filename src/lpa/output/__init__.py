@@ -32,10 +32,12 @@ else:
 # scalar and vectors
 Scalar = Union[int, np.integer, float, np.floating]
 Vector = np.ndarray # shape: (n,)
+
 # sets
 ScalarList = np.ndarray # shape: (...,)
 ScalarListList = Union[list, np.ndarray]
 VectorList = np.ndarray # shape: (..., n)
+
 # functions
 ModelFunction = Callable[
     [Scalar, Scalar, dict, int, ScalarList],
