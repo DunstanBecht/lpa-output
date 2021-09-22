@@ -30,7 +30,7 @@ else:
     from typing import Tuple
 
 # scalar and vectors
-Scalar = Union[int, float, np.intc]
+Scalar = Union[int, np.integer, float, np.floating]
 Vector = np.ndarray # shape: (n,)
 # sets
 ScalarList = np.ndarray # shape: (...,)
