@@ -122,6 +122,7 @@ def fits_data(
       **r: initial outer cut-off radius [nm] (default: 200)
       **b: bounds for (d, r) (default: 5e10*1e-18->5e18*1e-18 / 1->np.inf)
       **j: restriction of harmonics (default: no restriction)
+      **frrprt (Callable): Fourier transform part (default: np.real)
 
     Output:
         fitdat: fits data dictionary
@@ -139,6 +140,7 @@ def fits_data(
     r = kwargs.pop('r', 200) # initial outer cut-off radius [nm]
     b = kwargs.pop('b', ((5e10*1e-18, 5e18*1e-18), (1, np.inf))) # bounds
     j = kwargs.pop('j', o['j']) # harmonics to fit
+    frrprt = kwargs.pop('frrprt', np.real) # Fourier transform part
     if len(kwargs)>0:
         raise ValueError("wrong keywords: "+str(kwargs))
     # fit
@@ -150,7 +152,7 @@ def fits_data(
         while not failed and i_L<=o[f][i_j]:
             fj = o['j'][i_j] # harmonic
             fl = o['L'][:i_L] # maximum value ​​of L
-            fa = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
+            fa = frrprt(o['A'][i_j][:i_L]) # Fourier amplitudes for harmonic j
             fr = scipy.optimize.minimize(
                 standard_error,
                 np.array((d, r)),
@@ -197,6 +199,7 @@ def plot(
       **exfmt: export format (default: 'pdf')
       **title: export title (default: output stem)
       **fitdat: fits data dictionary
+      **frrprt (Callable): Fourier transform part (default: np.real)
       **j: restriction of harmonics (default: no restriction)
       **L: restriction of fits maximum L value (default: no restriction)
     """
@@ -206,10 +209,15 @@ def plot(
     expfmt = kwargs.pop('expfmt', 'pdf') # export format
     title = kwargs.pop('title', expstm.replace("_", " ")) # title
     fitdat = kwargs.pop('fitdat', None) # fits data dictionary
+    frrprt = kwargs.pop('frrprt', np.real) # Fourier transform part
     j = kwargs.pop('j', outdat['j']) # harmonics restriction
     L = kwargs.pop('L', np.inf) # restriction of maximum L value
     if len(kwargs)>0:
         raise ValueError("wrong keywords: "+str(kwargs))
+    if frrprt == np.real:
+        frrnot = r"\mathcal{R}(FUN)"
+    else:
+        frrnot = r"|FUN|"
     # collect data
     data = [] # list of the information on the curves to display
     for h in j: # collect the output amplitudes to display
@@ -217,9 +225,9 @@ def plot(
         i_L = min(outdat['f1'][i_j]+5, len(outdat['L'])) # range to display
         data.append({
             'L': outdat['L'][:i_L], # x variable
-            'A': outdat['A'][i_j][:i_L], # y variable
+            'A': frrprt(outdat['A'][i_j][:i_L]), # y variable
             'm': '.-' if fitdat is None else '.', # marker
-            'n': "A_{"+str(h)+"}(L)", # label
+            'n': frrnot.replace("FUN", "A_{"+str(h)+"}(L)"), # label
             'c': 'C'+str(h-1), # color
             'l': '', # extra information
             })
@@ -246,7 +254,7 @@ def plot(
                 'L': l, # x variable
                 'A': m(d, r, outdat, int(h), l), # y variable
                 'm': '-', # marker
-                'n': "A^{"+fitdat['m'].__name__+"}_{"+str(h)+r"}(L)", # label
+                'n': fitdat['m'].__name__+"_{"+str(h)+r"}(L)", # label
                 'c': 'C'+str(h-1), # color
                 'l': ", "+le+", "+ll, # extra information
             })
@@ -273,7 +281,7 @@ def plot(
             d['L'], # x variable
             np.log(d['A'])/d['L']**2, # y variable
             d['m'], # marker
-            label=r"$\frac{\ln("+d['n']+r")}{L^2}$"+d['l'],
+            label=r"$\ln("+d['n']+r")/L^2$"+d['l'],
             color=d['c'],
         )
     ax2.set_xscale("log")
@@ -400,8 +408,6 @@ def export(
         if key in ('d', 'r', 'j', 'fmtfit', 'fmtdat', 'title')
     }
     kw2 = {key: val for key, val in kw1.items() if key in ('title', 'j')}
-    if len(kwargs)>0:
-        raise ValueError("wrong keywords: "+str(kwargs))
     # export directory
     dirstm = os.path.join(expdir, expstm)
     if not os.path.exists(dirstm):
@@ -426,3 +432,6 @@ def export(
             expstm=expstm,
             **kw1
         )
+    kwargs.pop(frrprt)
+    if len(kwargs)>0:
+        raise ValueError("wrong keywords: "+str(kwargs))

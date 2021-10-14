@@ -49,15 +49,7 @@ def load_file(
         'C' (Scalar): contrast factor [1]
         'a' (Scalar): latice parameter [nm]
         'L' (ScalarList): Fourier variable [nm]
-        'A' (ScalarListList): Fourier amplitudes for each harmonic
-        'cos_AL' (ScalarList): cos of the first harmonic
-        'sin_AL' (ScalarList): sin of the first harmonic
-        'Cos_<j>AL' (ScalarList): cos of the <j>th harmonic
-        'Sin_<j>AL' (ScalarList): sin of the <j>th harmonic
-        'err_Cos' (ScalarList): cos error of the first harmonic
-        'err_Sin' (ScalarList): sin error of the first harmonic
-        'err_Cos_<j>AL' (ScalarList): cos error of the <j>th harmonic
-        'err_Sin_<j>AL' (ScalarList): sin error of the <j>th harmonic
+        'A' (ScalarListList): Fourier transform for each harmonic
         '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
@@ -90,10 +82,10 @@ def load_file(
             qtyval.append(np.array([eval(td[i][j]) for i in range(len(td))]))
         elif nam == 'A':
             qtyval.append(
-                np.array([np.sqrt(
+                np.array([
                     np.array([eval(td[i][4*h+1]) for i in range(len(td))])**2
-                  + np.array([eval(td[i][4*h+3]) for i in range(len(td))])**2
-                ) for h in range((len(tq)-3)//4)])
+                +1j*np.array([eval(td[i][4*h+3]) for i in range(len(td))])**2
+                for h in range((len(tq)-3)//4)])
             )
         else:
             raise ValueError("unknown quantity: "+nam)
