@@ -10,9 +10,43 @@ import scipy.integrate
 from . import *
 
 @beartype
+def GUW1(
+    p: ScalarList,
+    o: dict,
+    j: int,
+    l: ScalarList,
+) -> ScalarList:
+    """
+    Return the Fourier amplitudes calculated with the model GUW1.
+
+    The model is described in: I. Groma, T. Ungár, and M. Wilkens.
+    “Asymmetric X-ray line broadening of plastically deformed crystals.
+    I. Theory”. In: Journal of Applied Crystallography (1988). ISSN:
+    0021-8898.
+
+    Input:
+        p (ScalarList): optimization parameters contains:
+            d (Scalar): density of dislocations [nm^-2]
+            r (Scalar): outer cut-off radius [nm]
+            f (Scalar): fluctuation oof the density [1]
+            R (Scalar): R0 [nm]
+        o (dict): output data dictionary
+        j (int): selected harmonic
+        l (ScalarList): Fourier variable [nm]
+
+    Output:
+        a (ScalarList): Fourier amplitudes
+    """
+    d, r, f, R = p
+    i = o['index'][j] # index of the harmonic in c
+    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
+    k = np.pi/2*jg2*b2*C*d
+    D = k * (np.log(l/r)+f/2*k*l**2*np.log(l/R)*2)
+    return np.exp(l**2*D)
+
+@beartype
 def GUW2(
-    d: Scalar,
-    r: Scalar,
+    p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
@@ -26,15 +60,17 @@ def GUW2(
     0021-8898.
 
     Input:
-        d: density of dislocations [nm^-2]
-        r: outer cut-off radius [nm]
-        o: output data dictionary
-        j: selected harmonic
-        l: Fourier variable [nm]
+        p (ScalarList): optimization parameters contains:
+            d (Scalar): density of dislocations [nm^-2]
+            r (Scalar): outer cut-off radius [nm]
+        o (dict): output data dictionary
+        j (int): selected harmonic
+        l (ScalarList): Fourier variable [nm]
 
     Output:
-        a: Fourier amplitudes
+        a (ScalarList): Fourier amplitudes
     """
+    d, r = p
     i = o['index'][j] # index of the harmonic in c
     jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
     k = np.pi/2*jg2*b2*C*d
@@ -43,8 +79,7 @@ def GUW2(
 
 @beartype
 def W2(
-    d: Scalar,
-    r: Scalar,
+    p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
@@ -57,15 +92,17 @@ def W2(
     dislocations”. In: Materials Science Forum (2001). ISSN: 1662-9752.
 
     Input:
-        d: density of dislocations [nm^-2]
-        r: outer cut-off radius [nm]
-        o: output data dictionary
-        j: selected harmonic
-        l: Fourier variable [nm]
+        p (ScalarList): optimization parameters contains:
+            d (Scalar): density of dislocations [nm^-2]
+            r (Scalar): outer cut-off radius [nm]
+        o (dict): output data dictionary
+        j (int): selected harmonic
+        l (ScalarList): Fourier variable [nm]
 
     Output:
-        a: Fourier amplitudes
+        a (ScalarList): Fourier amplitudes
     """
+    d, r = p
     i = o['index'][j] # index of the harmonic in c
     jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
     z, g = o['z'], o['g']
@@ -83,10 +120,10 @@ def f(
     Intermediary function in the calculation of the model W1.
 
     Input:
-        e: value of Fourier variable divided by the outer cut-off radius [1]
+        e (Scalar): Fourier variable divided by the outer cut-off radius [1]
 
     Output:
-        r: value of f on e
+        r (Scalar): value of f on e
     """
     e2 = e**2
     def h(v):
@@ -106,8 +143,7 @@ vf = np.vectorize(f)
 
 @beartype
 def W1(
-    d: Scalar,
-    r: Scalar,
+    p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
@@ -121,15 +157,17 @@ def W1(
     1195–1221.
 
     Input:
-        d: density of dislocations [nm^-2]
-        r: outer cut-off radius [nm]
-        o: output data dictionary
-        j: selected harmonic
-        l: Fourier variable [nm]
+        p (ScalarList): optimization parameters contains:
+            d (Scalar): density of dislocations [nm^-2]
+            r (Scalar): outer cut-off radius [nm]
+        o (dict): output data dictionary
+        j (int): selected harmonic
+        l (ScalarList): Fourier variable [nm]
 
     Output:
-        a: Fourier amplitudes
+        a (ScalarList): Fourier amplitudes
     """
+    d, r = p
     i = o['index'][j] # index of the harmonic in c
     jg2, b2, C = o['jg2'][i], o['b2'], o['C']
     k = np.pi/2*jg2*b2*C*d

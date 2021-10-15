@@ -8,6 +8,24 @@ Filters to delimit the range of the Fourier variable.
 from . import *
 
 @beartype
+def f0(
+    a: ScalarList,
+) -> int:
+    """
+    Return the index from which the noise begins.
+
+    Input:
+        a: Fourier amplitudes for a given harmonic
+
+    Output:
+        i0: index of the first negative value
+    """
+    i0 = 0
+    while i0<len(a) and a[i0]>0:
+        i0 += 1
+    return i0
+
+@beartype
 def f1(
     a: ScalarList,
 ) -> int:
@@ -20,10 +38,11 @@ def f1(
     Output:
         i1: index at which the noise starts
     """
-    i = 1
-    while i<len(a) and a[i-1]>a[i]:
-        i += 1
-    return max(i, min(3, len(a)))
+    i0 = f0(a)
+    i1 = 1
+    while i1<i0 and a[i1-1]>a[i1]:
+        i1 += 1
+    return i1
 
 @beartype
 def f2(
@@ -40,6 +59,8 @@ def f2(
     Output:
         i2: index that marks the end of the linear part
     """
+    i0 = f0(a)
+    a, l = a[:i0], l[:i0]
     # convert
     y = np.log(a)/l**2
     x = np.log(l)

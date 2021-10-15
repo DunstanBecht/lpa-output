@@ -21,10 +21,10 @@ HQ = { # header quantities and corresponding lines
 
 @beartype
 def load_file(
-    qtynam: Union[List, Tuple],
+    qtynam: Union[list, tuple],
     impstm: str,
     **kwargs,
-) -> Tuple:
+) -> tuple:
     """
     Return the values of the quantities in qtynam from the output file.
 
@@ -83,8 +83,8 @@ def load_file(
         elif nam == 'A':
             qtyval.append(
                 np.array([
-                    np.array([eval(td[i][4*h+1]) for i in range(len(td))])**2
-                +1j*np.array([eval(td[i][4*h+3]) for i in range(len(td))])**2
+                    np.array([eval(td[i][4*h+1]) for i in range(len(td))])
+                +1j*np.array([eval(td[i][4*h+3]) for i in range(len(td))])
                 for h in range((len(tq)-3)//4)])
             )
         else:
@@ -93,10 +93,10 @@ def load_file(
 
 @beartype
 def load_directory(
-    qtynam: Union[List, Tuple],
+    qtynam: Union[list, tuple],
     impstm: str,
     **kwargs,
-) -> Tuple:
+) -> tuple:
     """
     Average and return the values of qtynam over multiple files.
 
@@ -131,10 +131,10 @@ def load_directory(
 
 @beartype
 def load(
-    qtynam: Union[List, Tuple],
+    qtynam: Union[list, tuple],
     impnam: str,
     **kwargs,
-) -> Tuple:
+) -> tuple:
     """
     Return the values of qtynam from a simulation output file or dir.
 
