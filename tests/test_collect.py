@@ -7,20 +7,21 @@ Script to test the module collect.
 
 from lpa.output import collect
 
-output = '10_rho5e14m-2_square_2000nm_RDD_d5e-4nm-2_edge_PBCR2_S0'
-qtynam = ('n', 's')
+outfil = 'rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_PBC1_S0_output'
+outdir = '10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output'
+qtynam = ('n', 's', 'd')
 
 # load file
-print(collect.load_file(qtynam, '01', impdir='data/'+output))
+print(collect.load_file(qtynam, outfil, impdir='data'))
 print()
 
 # load directory
-print(collect.load_directory(qtynam, output, impdir='data'))
+print(collect.load_directory(qtynam, outdir, impdir='data'))
 print()
 
 # versatile load
-print(collect.load(qtynam, output, impdir='data'))
-print(collect.load(qtynam, '01.dat', impdir='data/'+output))
+print(collect.load(qtynam, outfil+'.dat', impdir='data'))
+print(collect.load(qtynam, outdir, impdir='data/'))
 print()
 
 input("OK")
