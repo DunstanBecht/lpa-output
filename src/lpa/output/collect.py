@@ -89,10 +89,12 @@ def load_file(
             )
             return a
         elif nam =='d':
-            if 'Circle' in hv[HQ['s']]:
-                return aux('n')/2/np.pi/aux('s')**2/9 ######################
+            if 'rho' in impstm:
+                return eval(impstm.split('rho')[1].split('m-2')[0])*1e-18
+            elif 'Circle' in hv[HQ['s']]:
+                return aux('n')/2/np.pi/aux('s')**2
             else:
-                return aux('n')/aux('s')**2/9 ##################
+                return aux('n')/aux('s')**2
         else:
             raise ValueError(f"unknown quantity: {nam}")
     for nam in qtynam:
