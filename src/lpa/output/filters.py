@@ -12,7 +12,7 @@ def f0(
     a: ScalarList,
 ) -> int:
     """
-    Return the index from which the noise begins.
+    Return the index of the first negative value.
 
     Input:
         a: Fourier amplitudes for a given harmonic

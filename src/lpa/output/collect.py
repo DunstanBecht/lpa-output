@@ -41,23 +41,23 @@ def load_file(
         qtyval: quantity values in the order of qtynam
 
     The following quantities can be loaded:
+        'd' (Scalar): dislocation density [nm^-2]
+        'A' (ScalarListList): Fourier transform for each harmonic
         'n' (int): number of dislocations
         's' (int): size of the region of interest [nm]
         'g' (Vector): diffraction vector direction (hkl)
         'z' (Vector): direction of 'l' (line vector) [uvw]
         'b' (Vector): Burgers vector direction [uvw]
         'C' (Scalar): contrast factor [1]
-        'a' (Scalar): latice parameter [nm]
+        'a' (Scalar): lattice parameter [nm]
         'L' (ScalarList): Fourier variable [nm]
-        'A' (ScalarListList): Fourier transform for each harmonic
         '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
     # optional parameters
-    impdir = kwargs.pop('impdir', '') # import directory
-    impfmt = kwargs.pop('impfmt', 'dat') # import format
-    if len(kwargs)>0:
-        raise ValueError("wrong keywords: "+str(kwargs))
+    impdir = getkwa('impdir', kwargs, str, '')
+    impfmt = getkwa('impfmt', kwargs, str, 'dat')
+    endkwa(kwargs)
     # load file
     with open(os.path.join(impdir, impstm+'.'+impfmt), "r") as f:
         hv = [f.readline().strip("\n") for i in range(HL)] # header values
@@ -71,24 +71,32 @@ def load_file(
             i += 1 # go to next requested quantity
     qtyval = [] # values of the quantities in qtynam
     # sort values
-    for nam in qtynam:
+    def aux(nam: str):
         if nam in HQ: # the quantity is in the header
             v = np.array([eval(v) for v in hv[HQ[nam]].split('#')[0].split()])
             if len(v) == 1: # if the quantity is a scalar
                 v = v[0] # return a scalar
-            qtyval.append(v)
+            return v
         elif nam in tq: # the quantity is in the table
             j = tq.index(nam)
-            qtyval.append(np.array([eval(td[i][j]) for i in range(len(td))]))
+            return np.array([eval(td[i][j]) for i in range(len(td))])
         elif nam == 'A':
-            qtyval.append(
+            a = (
                 np.array([
                     np.array([eval(td[i][4*h+1]) for i in range(len(td))])
                 +1j*np.array([eval(td[i][4*h+3]) for i in range(len(td))])
                 for h in range((len(tq)-3)//4)])
             )
+            return a
+        elif nam =='d':
+            if 'Circle' in hv[HQ['s']]:
+                return aux('n')/2/np.pi/aux('s')**2/9 ######################
+            else:
+                return aux('n')/aux('s')**2/9 ##################
         else:
-            raise ValueError("unknown quantity: "+nam)
+            raise ValueError(f"unknown quantity: {nam}")
+    for nam in qtynam:
+        qtyval.append(aux(nam))
     return tuple(qtyval)
 
 @beartype
@@ -113,9 +121,8 @@ def load_directory(
         qtyval: averaged quantity values in the order of qtynam
     """
     # optional parameters
-    impdir = kwargs.pop('impdir', '') # import directory
-    if len(kwargs)>0:
-        raise ValueError("wrong keywords: "+str(kwargs))
+    impdir = getkwa('impdir', kwargs, str, '')
+    endkwa(kwargs)
     # load files
     dv = [] # values for each distribution file
     dir_stm = os.path.join(impdir, impstm) # files directory
@@ -147,9 +154,8 @@ def load(
         qtyval: quantity values in the order of qtynam
     """
     # optional parameters
-    impdir = kwargs.pop('impdir', '') # import directory
-    if len(kwargs)>0:
-        raise ValueError("wrong keywords: "+str(kwargs))
+    impdir = getkwa('impdir', kwargs, str, '')
+    endkwa(kwargs)
     # load output
     outpth = os.path.join(impdir, impnam) # path to the output
     if os.path.isfile(outpth): # load the output file
@@ -158,4 +164,4 @@ def load(
     elif os.path.isdir(outpth): # load and average the output directory
         return load_directory(qtynam, impnam, impdir=impdir)
     else:
-        raise ValueError("nothing found at specified path: "+outpth)
+        raise ValueError(f"nothing found at specified path: {outpth}")

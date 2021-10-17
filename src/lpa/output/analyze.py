@@ -9,38 +9,56 @@ import matplotlib
 import matplotlib.pyplot as plt
 import scipy.optimize
 from . import *
-from . import collect
-from . import models
-from . import filters
-
-defmodspe = (
-    (
-        models.GUW1,
-        'f1',
-        np.array((5e14*1e-18, 1000, 5e-4, 10)),
-        ((1e13*1e-18, 1e16*1e-18), (1, np.inf), (0, np.inf), (1, np.inf)),
-    ),
-    (
-        models.GUW2,
-        'f2',
-        np.array((5e14*1e-18, 1000)),
-        ((1e13*1e-18, 1e16*1e-18), (1, np.inf)),
-    ),
-    (
-        models.W1,
-        'f1',
-        np.array((5e14*1e-18, 1000)),
-        ((1e13*1e-18, 1e16*1e-18), (1, np.inf)),
-    ),
-    (
-        models.W2,
-        'f2',
-        np.array((5e14*1e-18, 1000)),
-        ((1e13*1e-18, 1e16*1e-18), (1, np.inf)),
-    ),
-)
+from . import collect, models, filters
 
 matplotlib.use("Agg") # to export plots with no bitmap allocation errors
+
+@beartype
+def defmodspe(
+    d: Scalar,
+    r: Scalar = 1000,
+) -> tuple:
+    """
+    Return a default model specifications.
+
+    Input:
+        d (Scalar): dislocation density initial guess [nm^-2]
+      **r (Scalar): outer cut-off radius initial guess [nm^-2]
+
+    Output:
+        modspe (tuple): model specifications
+    """
+    modspe = (
+        (
+            models.GUW1,
+            'f1',
+            np.array((d, r, -1e-2, 1)),
+            ('density[nm-2]', 'cut-off-radius[nm]', 'fluctuation', 'R0[nm]'),
+            ((d/2, d*2), (1e-20, 1e5), (-1, 1), (1e-20, 10)),
+        ),
+        (
+            models.GUW2,
+            'f2',
+            np.array((d, r)),
+            ('density[nm-2]', 'cut-off-radius[nm]'),
+            ((d/2, d*2), (1e-20, 1e5)),
+        ),
+        (
+            models.W1,
+            'f1',
+            np.array((d, r)),
+            ('density[nm-2]', 'cut-off-radius[nm]'),
+            ((d/2, d*2), (1e-20, 1e5)),
+        ),
+        (
+            models.W2,
+            'f2',
+            np.array((d, r)),
+            ('density[nm-2]', 'cut-off-radius[nm]'),
+            ((d/2, d*2), (1e-20, 1e5)),
+        ),
+    )
+    return modspe
 
 @beartype
 def output_data(
@@ -60,6 +78,7 @@ def output_data(
 
     The quantities contained in outdat are the following:
         'stm' (str): stem of the simulation output
+        'd' (Scalar): dislocation density [nm^-2]
         'g' (Vector): diffraction vector [nm^-1]
         'z' (Vector): line vector direction [uvw]
         'b' (Vector): Burgers vector [nm]
@@ -81,7 +100,7 @@ def output_data(
     frrprt = getkwa('frrprt', kwargs, Callable, np.real)
     # collect data
     outdat = {'stm': impstm} # output data dictionary
-    qtynam = ['g', 'z', 'b', 'C', 'a', 'L', 'A'] # quantities to load
+    qtynam = ['A', 'd', 'g', 'z', 'b', 'C', 'a', 'L'] # quantities to load
     for key, val in zip(qtynam, collect.load(qtynam, impstm, **kwargs)):
         outdat[key] = val # store the loaded quantities
     outdat['A'] = frrprt(outdat['A'])
@@ -125,17 +144,17 @@ def standard_error(
         W (bool): weigh the points
 
     Output:
-        e (Scalar): standard error of the fit (sigma^2)
+        e (Scalar): standard error of the fit
     """
     am = m(p, o, j, l) # model values
     if W:
-        e = np.log(a)/l**2 - np.log(m(p, o, j, l))/l**2
+        e = np.log(a/am)/l**2
         i = np.arange(1, len(l)+1)
         w = len(l)*np.log((i+1)/i)/np.log(len(l)+1)
     else:
         e = a - am
         w = 1
-    return np.sum(w*e**2)/(len(l)-2)
+    return np.sqrt(np.sum(w*e**2)/(len(l)-2))
 
 @beartype
 def fits_data(
@@ -155,8 +174,9 @@ def fits_data(
         f (str): lowpass filter name
         o (dict): output data dictionary
         p (ScalarList): initial optimization parameters
-      **b (tuple): initial optimization parameters bounds (default: None)
+      **b (tuple): initial optimization parameter bounds (default: defmodspe)
       **j (ScalarList): restriction of harmonics (default: no restriction)
+      **maxitr (int): maximum number of iterations (default: 1e7)
 
     Output:
         fitdat (dict): fits data dictionary
@@ -171,7 +191,7 @@ def fits_data(
     # optional parameters
     b = getkwa('b', kwargs, Optional[tuple], None)
     j = getkwa('j', kwargs, ScalarList, o['j'])
-
+    maxitr = getkwa('maxitr', kwargs, int, 10**7)
     endkwa(kwargs)
     # fit
     J, L, E, P = [], [], [], [] # fits information
@@ -189,19 +209,21 @@ def fits_data(
                 args=(o, int(fj), fl, fa, m, f=='f2'),
                 method='Nelder-Mead',
                 bounds=b,
+                options={'maxiter': maxitr}
             )
             if fr.success:
                 J.append(fj) # store harmonic
                 L.append(fl[-1]) # store maximum value ​​of L [nm]
                 E.append(fr.fun) # store error
-                p = fr.x
-                P.append(p) # store optimal parameters [nm^-2]
+                if np.absolute(fr.x[0]-o['d'])/o['d']<0.5:
+                    p = fr.x
+                P.append(fr.x) # store optimal parameters [nm^-2]
+                #print(format(fr.x[0]/o['d'], '15.9f'), format(fr.x[1], '15.9f'), format(fr.fun, '15e'), fr.x[2:])
             else:
-                print(("/!\ "+fr.message+"\n    "
-                    + "L="+str(fl[-1])+"nm "
-                    + "j="+str(fj)+" "
-                    + "model="+m.__name__
-                ))
+                print((f"/!\ {fr.message}\n    "
+                       f"L={fl[-1]}nm "
+                       f"j={fj} "
+                       f"model={m.__name__}"))
                 failed = True
             i_L += 1
     fitdat = {
@@ -246,7 +268,7 @@ def plot(
     elif outdat['frrprt'] == np.absolute:
         prtnot = r"|FUN|" # notation for module
     else:
-        prtnot = r"\mathrm{"+frrprt.__name__+r"}(FUN)"
+        prtnot = fr"\mathrm{{ {frrprt.__name__} }}(FUN)"
     # collect data
     data = [] # list of the information on the curves to display
     for h in j: # collect the output amplitudes to display
@@ -256,8 +278,8 @@ def plot(
             'L': outdat['L'][:i_L], # x variable
             'A': outdat['A'][i_j][:i_L], # y variable
             'm': '.-' if fitdat is None else '.', # marker
-            'n': prtnot.replace("FUN", "A_{"+str(h)+"}(L)"), # label
-            'c': 'C'+str(h-1), # color
+            'n': prtnot.replace("FUN", fr"A_{{ {h} }}(L)"), # label
+            'c': f'C{h-1}', # color
             'l': '', # extra information
             })
     if not fitdat is None: # collect the fit amplitudes to display
@@ -273,18 +295,18 @@ def plot(
         for i in range(len(maskj)): # through remaining fits
             Lmax = maskl[i] # maximum value of L [nm]
             p = maskp[i] # density and outer cut-off radius
-            v = r" \times 10^{".join(format(maske[i], '1.1e').split('e'))+"}"
-            le = r"$ \hat{\sigma} ="+v+" $" # fit error
-            ll = r"$ L \leq "+format(Lmax, '1.1f')+r" $" # fit range
+            v = format(maske[i], '1.1e').replace('e', r"\times 10 ^{")+"}"
+            le = fr"$ \hat{{\sigma}} = {v} $" # fit error
+            ll = fr"$ L \leq {Lmax:1.1f} $" # fit range
             h = maskj[i] # harmonic
             l = np.linspace(Lmin, Lmax, 40) # range to plot the fit
             data.append({
                 'L': l, # x variable
                 'A': m(p, outdat, int(h), l), # y variable
                 'm': '-', # marker
-                'n': fitdat['m'].__name__+"_{"+str(h)+r"}(L)", # label
-                'c': 'C'+str(h-1), # color
-                'l': ", "+le+", "+ll, # extra information
+                'n': f"{fitdat['m'].__name__}_{{ {h} }}(L)", # label
+                'c': f'C{h-1}', # color
+                'l': f", {le}, {ll}", # extra information
             })
     # fig
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
@@ -296,7 +318,7 @@ def plot(
             d['L'], # x variable
             d['A'], # y variable
             d['m'], # marker
-            label=r"$"+d['n']+r"$"+d['l'],
+            label=fr"$ {d['n']} $ {d['l']}",
             color=d['c'],
         )
     ax1.set_yscale("log")
@@ -309,7 +331,7 @@ def plot(
             d['L'], # x variable
             np.log(d['A'])/d['L']**2, # y variable
             d['m'], # marker
-            label=r"$\ln("+d['n']+r")/L^2$"+d['l'],
+            label=fr"$ \ln({d['n']}) / L^2 $ {d['l']}",
             color=d['c'],
         )
     ax2.set_xscale("log")
@@ -342,10 +364,10 @@ def export_model(
       **fmtfit (str): fits export format (default: 'png')
       **figttl (str): title of the plots (default: model and output stem)
       **valsep (str): value separator (default: ' ')
-      **prmfmt (tuple): optimization parameter format (default: ('1e', ...))
       **prmnam (tuple): optimization parameter names (default: ('p1', ...))
+      **maxitr (int): maximum number of iterations (default: 1e7)
       **j (ScalarList): restriction of harmonics (default: see fits_data)
-      **b (tuple): initial optimization parameters bounds (default: None)
+      **b (tuple): initial optimization parameter bounds (default: None)
     """
     modnam = modfun.__name__ # model name
     # optional parameters
@@ -355,21 +377,18 @@ def export_model(
     fmtfit = getkwa('fmtfit', kwargs, str, 'png')
     figttl = getkwa('figttl', kwargs, str, modnam+" "+outdat['stm'])
     valsep = getkwa('valsep', kwargs, str, ' ')
-    prmfmt = getkwa('prmfmt', kwargs, tuple, tuple(['%1e' for i in p]))
     prmnam = getkwa('prmnam', kwargs, tuple,
         tuple(['p'+str(i+1) for i in range(len(p))]))
     # collect
     fitdat = fits_data(modfun, modflt, outdat, p, **kwargs) # get fits data
     # export a figure for each fit
-    moddir = expdir+"/fits_plot_"+modnam+"/" # model export directory
+    moddir = f"{expdir}/fits_plot_{modnam}/" # model export directory
     if not os.path.exists(moddir):
         os.mkdir(moddir)
     for i in range(len(fitdat['e'])): # through the fits
-        fitstm = ("j"+ format(fitdat['j'][i], '01.0f')
-                + "_"+ format(fitdat['l'][i], '03.0f')+ "nm")
         plot(
             outdat, # output data
-            expstm=fitstm, # stem of the fit
+            expstm=f"j{fitdat['j'][i]:01.0f}_{fitdat['l'][i]:03.0f}nm",
             expdir=moddir, # model export directory
             expfmt=fmtfit, # plot export format
             fitdat=fitdat, # fits
@@ -378,15 +397,17 @@ def export_model(
             L=fitdat['l'][i], # restriction of the maximum L
         )
     # export fits data
-    fields = ['j', 'Lmax', 'error']+list(prmnam)
-    fmt = ['%1.0f', '%5.1f', '%1e']+list(prmfmt)
-    values = np.concatenate((
+    dftcol = f"harmonic{valsep}Lmax[nm]{valsep}   error{valsep}"
+    dftfmt = f"%8.0f{valsep}%8.1f{valsep}%8.1e{valsep}"
+    col = dftcol + valsep.join([format(n, '>22') for n in prmnam])
+    fmt = dftfmt + valsep.join(['%22.15e' for n in prmnam])
+    val = np.concatenate((
         np.transpose((fitdat['j'], fitdat['l'], fitdat['e'])),
         fitdat['p'],
     ), axis=1)
-    with open(os.path.join(expdir, 'fits_data_'+modnam+"."+fmtdat), "w") as f:
-        f.write(valsep.join(fields)+'\n')
-        np.savetxt(f, values, fmt=valsep.join(fmt))
+    with open(os.path.join(expdir, f'fits_data_{modnam}.{fmtdat}'), "w") as f:
+        f.write(col+'\n')
+        np.savetxt(f, val, fmt=fmt)
 
 @beartype
 def export(
@@ -404,8 +425,11 @@ def export(
       **fmtout (str): data export format (default: 'dat')
       **fmtdat (str): data export format (default: 'dat')
       **fmtfit (str): fits export format (default: 'png')
-      **modspe (tuple): models specifications (default: defmodspe)
       **figttl (str): title of the plots (default: model and output stem)
+      **frrprt (Callable): Fourier transform part (default: np.real)
+      **modspe (tuple): models specifications (default: defmodspe)
+      **maxitr (int): maximum number of iterations (default: 1e7)
+      **modspe (tuple): model specifications (default: defmodspe)
       **j (str): restriction of harmonics (default: see export_model)
     """
     # optional parameters
@@ -413,13 +437,14 @@ def export(
     expdir = getkwa('expdir', kwargs, str, '')
     expstm = getkwa('expstm', kwargs, str, impstm+'_analysis')
     fmtout = getkwa('fmtout', kwargs, str, 'pdf')
-    modspe = getkwa('modspe', kwargs, tuple, defmodspe)
+    frrprt = getkwa('frrprt', kwargs, Callable, np.real)
     # export directory
     dirstm = os.path.join(expdir, expstm)
     if not os.path.exists(dirstm):
         os.mkdir(dirstm)
     # load output data
-    outdat = output_data(impstm, impdir=impdir)
+    outdat = output_data(impstm, impdir=impdir, frrprt=frrprt)
+    modspe = getkwa('modspe', kwargs, tuple, defmodspe(outdat['d']))
     # plot output data
     plot(
         outdat,
@@ -429,12 +454,13 @@ def export(
         **{key: val for key, val in kwargs.items() if key in ('figttl', 'j')},
     )
     # fits
-    for modfun, modflt, p, b in modspe:
+    for modfun, modflt, p, prmnam, b in modspe:
         export_model(
             modfun,
             modflt,
             outdat,
             p,
+            prmnam=prmnam,
             b=b,
             expdir=dirstm,
             expstm=expstm,
