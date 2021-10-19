@@ -89,9 +89,10 @@ def load_file(
             )
             return a
         elif nam =='d':
-            if 'rho' in impstm:
-                return eval(impstm.split('rho')[1].split('m-2')[0])*1e-18
-            elif 'Circle' in hv[HQ['s']]:
+            for stm in (impstm, impdir):
+                if 'rho' in stm and 'm-2' in stm:
+                    return eval(stm.split('rho')[1].split('m-2')[0])*1e-18
+            if 'Circle' in hv[HQ['s']]:
                 return aux('n')/2/np.pi/aux('s')**2
             else:
                 return aux('n')/aux('s')**2
