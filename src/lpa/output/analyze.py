@@ -32,30 +32,30 @@ def defmodspe(
         (
             models.GUW1,
             'f1',
-            np.array((d, r, -1e-2, 1)),
+            np.array((d, r, 0, 600)),
             ('density[nm-2]', 'cut-off-radius[nm]', 'fluctuation', 'R0[nm]'),
-            ((d/2, d*2), (1e-20, 1e5), (-1, 1), (1e-20, 10)),
+            ((1e-18, 1), (1e-20, 1e5), (0, 1e2), (1e-200, 1e5)),
         ),
         (
             models.GUW2,
             'f2',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
-            ((d/2, d*2), (1e-20, 1e5)),
+            ((1e-18, 1), (1e-20, 1e5)),
         ),
         (
             models.W1,
             'f1',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
-            ((d/2, d*2), (1e-20, 1e5)),
+            ((1e-18, 1), (1e-20, 1e5)),
         ),
         (
             models.W2,
             'f2',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
-            ((d/2, d*2), (1e-20, 1e5)),
+            ((1e-18, 1), (1e-20, 1e5)),
         ),
     )
     return modspe
@@ -203,24 +203,33 @@ def fits_data(
             fj = o['j'][i_j] # harmonic
             fl = o['L'][:i_L] # maximum value ​​of L
             fa = o['A'][i_j][:i_L] # Fourier amplitudes for harmonic j
-            fr = scipy.optimize.minimize(
+            fr = lambda prm: scipy.optimize.minimize(
                 standard_error,
-                p,
+                prm,
                 args=(o, int(fj), fl, fa, m, f=='f2'),
                 method='Nelder-Mead',
                 bounds=b,
                 options={'maxiter': maxitr}
             )
-            if fr.success:
+            tstprm = [p] # tested initial guess parameters
+            if len(P)>0:
+                tstprm.append(P[-1])
+            tstres = [fr(prm) for prm in tstprm]
+            tstres = [res for res in tstres if res.success]
+            if len(tstres)>0:
+                tstres = sorted(tstres, key=lambda res: res.fun)
+                res = tstres[0]
                 J.append(fj) # store harmonic
                 L.append(fl[-1]) # store maximum value ​​of L [nm]
-                E.append(fr.fun) # store error
-                if np.absolute(fr.x[0]-o['d'])/o['d']<0.5:
-                    p = fr.x
-                P.append(fr.x) # store optimal parameters [nm^-2]
-                #print(format(fr.x[0]/o['d'], '15.9f'), format(fr.x[1], '15.9f'), format(fr.fun, '15e'), fr.x[2:])
+                E.append(res.fun) # store error
+                P.append(res.x) # store optimal parameters [nm^-2]
+                print((f"dst: {res.x[0]/o['d']:11.9f} | "
+                       f"rad: {res.x[1]:9.3e} | "
+                       f"err: {res.fun:9.3e} | "
+                       f"{m.__name__:>4}_{fj} | "
+                       f"p3+: {res.x[2:]}"))
             else:
-                print((f"/!\ {fr.message}\n    "
+                print((f"/!\ {' & '.join([res.message for res in tstres])}\n "
                        f"L={fl[-1]}nm "
                        f"j={fj} "
                        f"model={m.__name__}"))
