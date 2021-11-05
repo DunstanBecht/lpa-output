@@ -41,7 +41,7 @@ def GUW1(
     i = o['index'][j] # index of the harmonic in c
     jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
     k = np.pi/2*jg2*b2*C*d
-    D = k * (np.log(l/r)+f/2*k*l**2*np.log(l/R)*2)
+    D = k * (np.log(l/r)+f/2*k*l**2*np.log(l/R)**2)
     return np.exp(l**2*D)
 
 @beartype
