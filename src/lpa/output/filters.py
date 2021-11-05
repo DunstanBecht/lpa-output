@@ -85,7 +85,7 @@ def f2_xy(
     w = np.ones(len(x))
     xw = np.stack((x, w)).T
     if len(x)<3:
-        raise ValueError("not enough points")
+        return 2
     err = 0
     i = 3
     while i<len(x) and np.abs(err/np.ptp(y[:i]))<0.01:
