@@ -12,7 +12,7 @@ predicted by the model.
 """
 
 __author__ = "Dunstan Becht"
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import os
 import sys
