@@ -44,7 +44,7 @@ VectorList = np.ndarray # shape: (..., n)
 # functions
 ModelFunction = Callable[
     [Scalar, Scalar, dict, int, ScalarList],
-    [ScalarList]
+    ScalarList
 ]
 
 def getkwa(
