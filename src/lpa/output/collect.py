@@ -7,16 +7,20 @@ Tool for loading data stored in simulation output files.
 
 from . import *
 
-HL = 8 # number of lines in the header
+HL = 11 # number of lines in the header
 
 HQ = { # header quantities and corresponding lines
-    'n': 0, # number of dislocations
-    's': 2, # size of the region of interest [nm]
-    'g': 3, # diffraction vector direction (hkl)
-    'z': 4, # direction of 'l' (line vector) [uvw]
-    'b': 5, # Burgers vector direction [uvw]
-    'C': 6, # contrast factor [1]
-    'a': 7, # latice parameter [nm]
+    'v':   0, # lpa-xrd version
+    'd':   1, # dislocation density
+    'z':   2, # direction of 'l' (line vector)
+    'b':   3, # Burgers vector direction
+    'g':   4, # diffraction vector direction
+    'C':   5, # contrast coefficient
+    'a':   6, # cell parameter
+    's':   7, # size of the region of interest
+    'nu':  8, # Poisson's number
+    'nd':  9, # number of dislocations in the input file
+    'np': 10, # number of random points
 }
 
 @beartype
@@ -40,17 +44,24 @@ def load_file(
     Output:
         qtyval: quantity values in the order of qtynam
 
-    The following quantities can be loaded:
-        'd' (Scalar): dislocation density [nm^-2]
-        'A' (ScalarListList): Fourier transform for each harmonic
-        'n' (int): number of dislocations
-        's' (int): size of the region of interest [nm]
-        'g' (Vector): diffraction vector direction (hkl)
+    The following variables can be loaded:
+        'v' (str): lpa-xrd version
+        'd' (Scalar): dislocation density [m^-2]
         'z' (Vector): direction of 'l' (line vector) [uvw]
         'b' (Vector): Burgers vector direction [uvw]
+        'g' (Vector): diffraction vector direction (hkl)
         'C' (Scalar): contrast factor [1]
         'a' (Scalar): lattice parameter [nm]
+        's' (int): size of the region of interest [nm]
+        'nu' (Scalar): Poisson's number [1]
+        'nd' (int): number of dislocations in the input file
+        'np' (int): number of random points
+        'A' (ScalarListList): Fourier transform for each harmonic
         'L' (ScalarList): Fourier variable [nm]
+        'cos<j>' (ScalarList): with <j> the harmonic [1]
+        'sin<j>' (ScalarList): with <j> the harmonic [1]
+        'err_cos<j>' (ScalarList): with <j> the harmonic [1]
+        'err_sin<j>' (ScalarList): with <j> the harmonic [1]
         '<eps^2>' (ScalarList): mean square strain [1]
         'bad_points' (ScalarList): number of incorrect random points
     """
@@ -61,7 +72,7 @@ def load_file(
     # load file
     with open(os.path.join(impdir, impstm+'.'+impfmt), "r") as f:
         hv = [f.readline().strip("\n") for i in range(HL)] # header values
-        tq = f.readline().split() # table quantities
+        tq = f.readline().split()[1:] # table quantities
         imptab = False # the coefficient table has been imported
         i = 0 # index on qtynam
         while i<len(qtynam) and not imptab: # stops when element is in table
@@ -73,7 +84,8 @@ def load_file(
     # sort values
     def aux(nam: str):
         if nam in HQ: # the quantity is in the header
-            v = np.array([eval(v) for v in hv[HQ[nam]].split('#')[0].split()])
+            v = np.array([eval(v) if nam!='v' else v
+                          for v in hv[HQ[nam]].split('#')[0].split()])
             if len(v) == 1: # if the quantity is a scalar
                 v = v[0] # return a scalar
             return v
@@ -88,14 +100,6 @@ def load_file(
                 for h in range((len(tq)-3)//4)])
             )
             return a
-        elif nam =='d':
-            for stm in (impstm, impdir):
-                if 'rho' in stm and 'm-2' in stm:
-                    return eval(stm.split('rho')[1].split('m-2')[0])*1e-18
-            if 'Circle' in hv[HQ['s']]:
-                return aux('n')/2/np.pi/aux('s')**2
-            else:
-                return aux('n')/aux('s')**2
         else:
             raise ValueError(f"unknown quantity: {nam}")
     for nam in qtynam:
@@ -135,8 +139,11 @@ def load_directory(
         dv.append(val) # store data
     qtyval = [] # averaged values
     for j in range(len(qtynam)):
-        lstval = [dv[i][j] for i in range(len(stm_fmt))] # values to average
-        qtyval.append(sum(lstval)/len(lstval)) # store mean
+        if qtynam[j]!='v':
+            lstval = [dv[i][j] for i in range(len(stm_fmt))] # to average
+            qtyval.append(sum(lstval)/len(lstval)) # store mean
+        else:
+            qtyval.append(dv[0][j]) # store mean
     return tuple(qtyval)
 
 @beartype

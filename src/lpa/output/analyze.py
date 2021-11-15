@@ -104,7 +104,9 @@ def output_data(
     for key, val in zip(qtynam, collect.load(qtynam, impstm, **kwargs)):
         outdat[key] = val # store the loaded quantities
     outdat['A'] = frrprt(outdat['A'])
+    outdat['d'] = outdat['d']*1e-18 # change density unit
     outdat['g'] = outdat['g']/outdat['a'] # correct diffraction vector norm
+    outdat['b'] = outdat['b']*outdat['a']/2 # correct Burgers vector norm
     outdat['j'] = np.arange(len(outdat['A'])) + 1 # harmonics
     # pre-calculated quantities
     vertij = outdat['j'].reshape((len(outdat['j']), 1))
