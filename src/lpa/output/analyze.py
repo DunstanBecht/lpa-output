@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import scipy.optimize
 from . import *
+from . import __version__
 from . import collect, models, filters
 
 matplotlib.use("Agg") # to export plots with no bitmap allocation errors
@@ -321,7 +322,7 @@ def plot(
             })
     # fig
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    fig.subplots_adjust(left=0.06, right=0.98, bottom=0.1)
+    fig.subplots_adjust(left=0.06, right=0.95, bottom=0.1)
     fig.suptitle(figttl)
     # ax1: A(L) as a function of L (log scale)
     for d in data:
@@ -349,6 +350,16 @@ def plot(
     ax2.set_xlabel(r"$L \ (nm)$")
     ax2.grid()
     ax2.legend()
+    ax2.text(
+        1.05,
+        0.5,
+        f"lpa-output ({__version__})",
+        rotation=90,
+        fontfamily='monospace',
+        ha='left',
+        va='center',
+        transform=ax2.transAxes,
+    )
     # export
     plt.savefig(os.path.join(expdir, expstm+'.'+expfmt), format=expfmt)
     plt.close('all')
@@ -408,8 +419,8 @@ def export_model(
             L=fitdat['l'][i], # restriction of the maximum L
         )
     # export fits data
-    dftcol = f"harmonic{valsep}Lmax[nm]{valsep}   error{valsep}"
-    dftfmt = f"%8.0f{valsep}%8.1f{valsep}%8.1e{valsep}"
+    dftcol = f"# j{valsep}Lmax[nm]{valsep}   error{valsep}"
+    dftfmt = f"%3.0f{valsep}%8.1f{valsep}%8.1e{valsep}"
     col = dftcol + valsep.join([format(n, '>22') for n in prmnam])
     fmt = dftfmt + valsep.join(['%22.15e' for n in prmnam])
     val = np.concatenate((
@@ -417,6 +428,10 @@ def export_model(
         fitdat['p'],
     ), axis=1)
     with open(os.path.join(expdir, f'fits_data_{modnam}.{fmtdat}'), "w") as f:
+        f.write(f"{__version__:>8} # v: lpa-ouput version\n")
+        f.write(f"{outdat['frrprt'].__name__:>8} # t: A(L) transformation\n")
+        f.write(f"{modfun.__name__:>8} # m: model function\n")
+        f.write(f"{modflt:>8} # f: filter\n")
         f.write(col+'\n')
         np.savetxt(f, val, fmt=fmt)
 
