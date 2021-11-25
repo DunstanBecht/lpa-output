@@ -322,6 +322,9 @@ def plot(
                 'c': f'C{h-1}', # color
                 'l': f", {le}, {ll}", # extra information
             })
+        fltinf = fr" filtered with {fitdat['f']}" # filter info on axes
+    else:
+        fltinf = ""
     # fig
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     fig.subplots_adjust(left=0.06, right=0.95, bottom=0.1)
@@ -336,7 +339,7 @@ def plot(
             color=d['c'],
         )
     ax1.set_yscale("log")
-    ax1.set_xlabel(r"$L \ (nm)$")
+    ax1.set_xlabel(r"$L \ (nm)$"+fltinf)
     ax1.grid()
     ax1.legend()
     # ax2: ln(A(L)) (log scale) as a function of L^2
@@ -349,7 +352,7 @@ def plot(
             color=d['c'],
         )
     ax2.set_xscale("log")
-    ax2.set_xlabel(r"$L \ (nm)$")
+    ax2.set_xlabel(r"$L \ (nm)$"+fltinf)
     ax2.grid()
     ax2.legend()
     # version
