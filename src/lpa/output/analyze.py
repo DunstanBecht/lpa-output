@@ -32,28 +32,28 @@ def defmodspe(
     modspe = (
         (
             models.GUW1,
-            'f1',
+            'F1',
             np.array((d, r, 0, 600)),
             ('density[nm-2]', 'cut-off-radius[nm]', 'fluctuation', 'R0[nm]'),
             ((1e-18, 1), (1e-20, 1e5), (0, 1e2), (1e-200, 1e5)),
         ),
         (
             models.GUW2,
-            'f2',
+            'F2',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
             ((1e-18, 1), (1e-20, 1e5)),
         ),
         (
             models.W1,
-            'f1',
+            'F1',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
             ((1e-18, 1), (1e-20, 1e5)),
         ),
         (
             models.W2,
-            'f2',
+            'F2',
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
             ((1e-18, 1), (1e-20, 1e5)),
@@ -92,8 +92,8 @@ def output_data(
         'jgb' (ScalarList): (j*g).b [1]
         'b2' (Scalar): |b|^2 [nm^2]
         'jg2' (Scalar): |j*g|^2 [nm^-2]
-        'f1' (List): index at which the noise starts for each harmonic
-        'f2' (List): index of linear zone end for each harmonic
+        'F1' (List): index at which the noise starts for each harmonic
+        'F2' (List): index of linear zone end for each harmonic
         'index' (dict): reverse indexing for the harmonics
         'frrprt' (Callable): Fourier transform part
     """
@@ -116,9 +116,9 @@ def output_data(
     outdat['b2'] = np.sum(outdat['b']**2) # |b|^2 [nm^2]
     outdat['jg2'] = np.sum(outdat['jg']**2, axis=1) # |j*g|^2 [nm^-2]
     # filters
-    outdat['f0'] = [filters.f0(a) for a in outdat['A']] # suppress noise
-    outdat['f1'] = [filters.f1(a) for a in outdat['A']] # suppress noise
-    outdat['f2'] = [filters.f2(a, outdat['L']) for a in outdat['A']] # linear
+    outdat['F0'] = [filters.F0(a) for a in outdat['A']] # suppress noise
+    outdat['F1'] = [filters.F1(a) for a in outdat['A']] # suppress noise
+    outdat['F2'] = [filters.F2(a, outdat['L']) for a in outdat['A']] # linear
     # reverse index directory
     outdat['index'] = {outdat['j'][i]: i for i in range(len(outdat['j']))}
     outdat['frrprt'] = frrprt
@@ -190,6 +190,7 @@ def fits_data(
         'e' (ScalarList): optimal fit standard errors
         'p' (ScalarList): optimal parameters
         'm' (Callable): model function
+        'f' (str): filter used
     """
     # optional parameters
     b = getkwa('b', kwargs, Optional[tuple], None)
@@ -209,7 +210,7 @@ def fits_data(
             fr = lambda prm: scipy.optimize.minimize(
                 standard_error,
                 prm,
-                args=(o, int(fj), fl, fa, m, f=='f2'),
+                args=(o, int(fj), fl, fa, m, f=='F2'),
                 method='Nelder-Mead',
                 bounds=b,
                 options={'maxiter': maxitr}
@@ -244,6 +245,7 @@ def fits_data(
         'e': np.array(E), # errors
         'p': np.array(P), # optimal parameters
         'm': m, # model function
+        'f': f, # filter used
     }
     return fitdat
 
@@ -285,7 +287,7 @@ def plot(
     data = [] # list of the information on the curves to display
     for h in j: # collect the output amplitudes to display
         i_j = outdat['index'][h] # index of the harmonic in c
-        i_L = min(outdat['f1'][i_j], len(outdat['L'])) # range to display
+        i_L = min(outdat['F1'][i_j], len(outdat['L'])) # range to display
         data.append({
             'L': outdat['L'][:i_L], # x variable
             'A': outdat['A'][i_j][:i_L], # y variable
@@ -350,6 +352,7 @@ def plot(
     ax2.set_xlabel(r"$L \ (nm)$")
     ax2.grid()
     ax2.legend()
+    # version
     ax2.text(
         1.05,
         0.5,
@@ -360,6 +363,15 @@ def plot(
         va='center',
         transform=ax2.transAxes,
     )
+    # fit representation
+    if not fitdat is None:
+        ax = {'F1': ax1, 'F2': ax2}[fitdat['f']]
+        for spine in ax.spines.values():
+            spine.set_edgecolor('C3')
+        ax.set_title(
+            f"(representation used to calculate the fitting deviation)",
+            color='C3',
+        )
     # export
     plt.savefig(os.path.join(expdir, expstm+'.'+expfmt), format=expfmt)
     plt.close('all')

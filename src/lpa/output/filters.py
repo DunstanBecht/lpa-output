@@ -8,7 +8,7 @@ Filters to delimit the range of the Fourier variable.
 from . import *
 
 @beartype
-def f0(
+def F0(
     a: ScalarList,
 ) -> int:
     """
@@ -26,7 +26,7 @@ def f0(
     return i0
 
 @beartype
-def f1(
+def F1(
     a: ScalarList,
 ) -> int:
     """
@@ -38,14 +38,14 @@ def f1(
     Output:
         i1: index at which the noise starts
     """
-    i0 = f0(a)
+    i0 = F0(a)
     i1 = 1
     while i1<i0 and a[i1-1]>a[i1]:
         i1 += 1
     return i1
 
 @beartype
-def f2(
+def F2(
     a: ScalarList,
     l: ScalarList,
 ) -> int:
@@ -59,16 +59,16 @@ def f2(
     Output:
         i2: index that marks the end of the linear part
     """
-    i0 = f0(a)
+    i0 = F0(a)
     a, l = a[:i0], l[:i0]
     # convert
     y = np.log(a)/l**2
     x = np.log(l)
     # filter
-    return f2_xy(y, x)
+    return F2_xy(y, x)
 
 @beartype
-def f2_xy(
+def F2_xy(
     y: ScalarList,
     x: ScalarList,
 ) -> int:
