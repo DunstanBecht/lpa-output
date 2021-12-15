@@ -36,7 +36,8 @@ pip install -U lpa-output
 
 ### Fits data
 ```
-   0.9.4 # v: lpa-ouput version
+   0.9.5 # v: lpa-ouput version
+5.00E+13 # d: dislocation density [m^-2]
     real # t: A(L) transformation
     GUW1 # m: model function
       F1 # f: filter
