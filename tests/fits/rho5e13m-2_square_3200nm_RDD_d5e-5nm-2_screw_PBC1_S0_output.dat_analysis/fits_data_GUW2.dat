@@ -1,4 +1,5 @@
-   0.9.4 # v: lpa-ouput version
+   0.9.5 # v: lpa-ouput version
+5.00E+13 # d: dislocation density [m^-2]
 absolute # t: A(L) transformation
     GUW2 # m: model function
       F2 # f: filter
