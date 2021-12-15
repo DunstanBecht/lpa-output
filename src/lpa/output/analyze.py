@@ -444,6 +444,7 @@ def export_model(
     ), axis=1)
     with open(os.path.join(expdir, f'fits_data_{modnam}.{fmtdat}'), "w") as f:
         f.write(f"{__version__:>8} # v: lpa-ouput version\n")
+        f.write(f"{outdat['d']*1e18:8.2E} # d: dislocation density [m^-2]\n")
         f.write(f"{outdat['frrprt'].__name__:>8} # t: A(L) transformation\n")
         f.write(f"{modfun.__name__:>8} # m: model function\n")
         f.write(f"{modflt:>8} # f: filter\n")
