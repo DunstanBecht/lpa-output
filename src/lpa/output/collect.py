@@ -36,10 +36,10 @@ def load_file(
     header of the file is loaded.
 
     Input:
-        qtynam: name of the quantities to extract from the file
-        impstm: stem of the file to import
-      **impdir: import directory (default: '')
-      **impfmt: import format (default: 'dat')
+        qtynam (list|tuple): name of the quantities to extract from the file
+        impstm (str): stem of the file to import
+      **impdir (str): import directory (default: '')
+      **impfmt (str): import format (default: 'dat')
 
     Output:
         qtyval: quantity values in the order of qtynam
@@ -120,9 +120,9 @@ def load_directory(
     as in function load_file can be extracted.
 
     Input:
-        qtynam: name of the quantities to extract and average
-        impstm: stem of the directory to import
-      **impdir: import directory (default: see load_file)
+        qtynam (list|tuple): name of the quantities to extract and average
+        impstm (str): stem of the directory to import
+      **impdir (str): import directory (default: see load_file)
 
     Ouput:
         qtyval: averaged quantity values in the order of qtynam
@@ -147,6 +147,47 @@ def load_directory(
     return tuple(qtyval)
 
 @beartype
+def average(
+    impnam: str,
+    **kwargs: str,
+) -> None:
+    """
+    Produce a file resulting from the averaging of a sample.
+
+    Input:
+        impnam (str): name of the output directory
+      **impdir (str): import directory (default: '')
+      **expdir (str): export directory (default: impdir)
+      **fmtout (str): data export format (default: 'dat')
+    """
+    impdir = getkwa('impdir', kwargs, str, '')
+    expdir = getkwa('expdir', kwargs, str, impdir)
+    fmtout = getkwa('fmtout', kwargs, str, 'dat')
+    endkwa(kwargs)
+    smpdir = os.path.join(impdir, impnam)
+    avgfil = os.path.join(expdir, impnam)
+    # retrive data
+    with open(os.path.join(smpdir, os.listdir(smpdir)[0]), 'r') as f:
+        hdr = [f.readline() for i in range(12)]
+    clm = hdr[-1].split()[1:]
+    qtynam = ['d']+clm
+    res = load_directory(qtynam, impnam, impdir=impdir)
+    dst = res[0]
+    tab = list(res[1:])
+    j = (len(clm)-3)//4
+    n = len(os.listdir(smpdir))
+    # edit data
+    hdr[1] = f"{dst:8.2e} #" + hdr[1].split('#')[1]
+    for h in range(j):
+        for i in [1, 3]:
+            tab[1+4*h+i] /= np.sqrt(n)
+    # write data
+    fmt = ['%6.1f'] + ['%10.7f']*(4*j+1) + ['%10d']
+    with open(f"{avgfil}.{fmtout}", 'w') as f:
+        f.write("".join(hdr))
+        np.savetxt(f, np.array(tab).T, fmt=fmt)
+
+@beartype
 def load(
     qtynam: Union[list, tuple],
     impnam: str,
@@ -156,9 +197,9 @@ def load(
     Return the values of qtynam from a simulation output file or dir.
 
     Input:
-        qtynam: name of the quantities to extract
-        impnam: name of the directory or output file to load
-      **impdir: import directory (default: see load_file)
+        qtynam (list|tuple): name of the quantities to extract
+        impnam (str): name of the directory or output file to load
+      **impdir (str): import directory (default: see load_file)
 
     Output:
         qtyval: quantity values in the order of qtynam

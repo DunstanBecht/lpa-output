@@ -15,6 +15,9 @@ qtynam = ('v', 'nd', 's', 'd')
 print(collect.load_file(qtynam, outfil, impdir='data'))
 print()
 
+# average directory
+collect.average(outdir, impdir='data')
+
 # load directory
 print(collect.load_directory(qtynam, outdir, impdir='data'))
 print()
