@@ -15,10 +15,10 @@ def F0(
     Return the index of the first negative value.
 
     Input:
-        a: Fourier amplitudes for a given harmonic
+        a (ScalarList): Fourier amplitudes for a given harmonic
 
     Output:
-        i0: index of the first negative value
+        i0 (int): index of the first negative value
     """
     i0 = 0
     while i0<len(a) and a[i0]>0:
@@ -33,10 +33,10 @@ def F1(
     Return the index from which the noise begins.
 
     Input:
-        a: Fourier amplitudes for a given harmonic
+        a (ScalarList): Fourier amplitudes for a given harmonic
 
     Output:
-        i1: index at which the noise starts
+        i1 (int): index at which the noise starts
     """
     i0 = F0(a)
     i1 = 1
@@ -53,11 +53,11 @@ def F2(
     Return the index from which ln(A(L))/L^2 is no longer linear.
 
     Input:
-        l: Fourier variable
-        a: Fourier amplitudes for a given harmonic
+        l (ScalarList): Fourier variable
+        a (ScalarList): Fourier amplitudes for a given harmonic
 
     Output:
-        i2: index that marks the end of the linear part
+        i2 (int): index that marks the end of the linear part
     """
     i0 = F0(a)
     a, l = a[:i0], l[:i0]
@@ -76,11 +76,11 @@ def F2_xy(
     Return the index from which y is no longer linear.
 
     Input:
-        y: y variable
-        x: x variable
+        y (ScalarList): y variable
+        x (ScalarList): x variable
 
     Output:
-        i2: index that marks the end of the linear part
+        i2 (int): index that marks the end of the linear part
     """
     w = np.ones(len(x))
     xw = np.stack((x, w)).T
