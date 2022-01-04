@@ -100,8 +100,8 @@ def output_data(
     # optional parameters
     frrprt = getkwa('frrprt', kwargs, Callable, np.real)
     # collect data
-    outdat = {'stm': impstm} # output data dictionary
-    qtynam = ['A', 'd', 'g', 'z', 'b', 'C', 'a', 'L'] # quantities to load
+    outdat = {} # output data dictionary
+    qtynam = ['stm', 'A', 'd', 'g', 'z', 'b', 'C', 'a', 'L'] # to load
     for key, val in zip(qtynam, collect.load(qtynam, impstm, **kwargs)):
         outdat[key] = val # store the loaded quantities
     outdat['A'] = frrprt(outdat['A'])
@@ -477,16 +477,16 @@ def export(
     # optional parameters
     impdir = getkwa('impdir', kwargs, str, '')
     expdir = getkwa('expdir', kwargs, str, '')
-    expstm = getkwa('expstm', kwargs, str, impstm+'_analysis')
     fmtout = getkwa('fmtout', kwargs, str, 'pdf')
     frrprt = getkwa('frrprt', kwargs, Callable, np.real)
+    # load output data
+    outdat = output_data(impstm, impdir=impdir, frrprt=frrprt)
+    modspe = getkwa('modspe', kwargs, tuple, defmodspe(outdat['d']))
+    expstm = getkwa('expstm', kwargs, str, outdat['stm']+'_analysis')
     # export directory
     dirstm = os.path.join(expdir, expstm)
     if not os.path.exists(dirstm):
         os.mkdir(dirstm)
-    # load output data
-    outdat = output_data(impstm, impdir=impdir, frrprt=frrprt)
-    modspe = getkwa('modspe', kwargs, tuple, defmodspe(outdat['d']))
     # plot output data
     plot(
         outdat,

@@ -45,6 +45,7 @@ def load_file(
         qtyval: quantity values in the order of qtynam
 
     The following variables can be loaded:
+        'stm' (str): output stem
         'v' (str): lpa-xrd version
         'd' (Scalar): dislocation density [m^-2]
         'z' (Vector): direction of 'l' (line vector) [uvw]
@@ -100,6 +101,8 @@ def load_file(
                 for h in range((len(tq)-3)//4)])
             )
             return a
+        elif nam == 'stm':
+            return impstm
         else:
             raise ValueError(f"unknown quantity: {nam}")
     for nam in qtynam:
@@ -139,11 +142,13 @@ def load_directory(
         dv.append(val) # store data
     qtyval = [] # averaged values
     for j in range(len(qtynam)):
-        if qtynam[j]!='v':
+        if qtynam[j]=='v':
+            qtyval.append(dv[0][j])
+        elif qtynam[j]=='stm':
+            qtyval.append(impstm)
+        else:
             lstval = [dv[i][j] for i in range(len(stm_fmt))] # to average
             qtyval.append(sum(lstval)/len(lstval)) # store mean
-        else:
-            qtyval.append(dv[0][j]) # store mean
     return tuple(qtyval)
 
 @beartype
