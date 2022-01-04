@@ -187,7 +187,7 @@ def average(
         for i in [1, 3]:
             tab[1+4*h+i] /= np.sqrt(n)
     # write data
-    fmt = ['%6.1f'] + ['%10.7f']*(4*j+1) + ['%10d']
+    fmt = "%6.1f" + " %22.15E %14.7E %22.15E %14.7E"*j + " %22.15E %10d"
     with open(f"{avgfil}.{fmtout}", 'w') as f:
         f.write("".join(hdr))
         np.savetxt(f, np.array(tab).T, fmt=fmt)
