@@ -78,7 +78,8 @@ def load_file(
         i = 0 # index on qtynam
         while i<len(qtynam) and not imptab: # stops when element is in table
             if qtynam[i]=='A' or qtynam[i] in tq: # the quantity is in table
-                td = [l.split() for l in f.readlines()] # load table data
+                td = np.loadtxt(f).T # table data
+                nj = (len(tq)-3)//4 # number of harmonics
                 imptab = True # inform that the table has been imported
             i += 1 # go to next requested quantity
     qtyval = [] # values of the quantities in qtynam
@@ -92,14 +93,9 @@ def load_file(
             return v
         elif nam in tq: # the quantity is in the table
             j = tq.index(nam)
-            return np.array([eval(td[i][j]) for i in range(len(td))])
+            return td[j]
         elif nam == 'A':
-            a = (
-                np.array([
-                    np.array([eval(td[i][4*h+1]) for i in range(len(td))])
-                +1j*np.array([eval(td[i][4*h+3]) for i in range(len(td))])
-                for h in range((len(tq)-3)//4)])
-            )
+            a = np.array([td[4*h+1] + 1j*td[4*h+3] for h in range(nj)])
             return a
         elif nam == 'stm':
             return impstm
@@ -218,6 +214,8 @@ def load(
         stm, fmt = os.path.splitext(impnam)
         return load_file(qtynam, stm, impdir=impdir, impfmt=fmt[1:])
     elif os.path.isdir(outpth): # load and average the output directory
-        return load_directory(qtynam, impnam, impdir=impdir)
+        if not os.path.isfile(f"{outpth}.dat"):
+            average(impnam, impdir=impdir, expdir=impdir)
+        return load_file(qtynam, impnam, impfmt='dat', impdir=impdir)
     else:
         raise ValueError(f"nothing found at specified path: {outpth}")
