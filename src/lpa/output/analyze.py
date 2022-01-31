@@ -438,10 +438,11 @@ def export_model(
     dftfmt = f"%3.0f{valsep}%8.1f{valsep}%8.1e{valsep}"
     col = dftcol + valsep.join([format(n, '>22') for n in prmnam])
     fmt = dftfmt + valsep.join(['%22.15e' for n in prmnam])
-    val = np.concatenate((
-        np.transpose((fitdat['j'], fitdat['l'], fitdat['e'])),
-        fitdat['p'],
-    ), axis=1)
+    if len(fitdat['j'])>0:
+        val = np.concatenate((
+            np.transpose((fitdat['j'], fitdat['l'], fitdat['e'])),
+            fitdat['p'],
+        ), axis=1)
     with open(os.path.join(expdir, f'fits_data_{modnam}.{fmtdat}'), "w") as f:
         f.write(f"{__version__:>8} # v: lpa-ouput version\n")
         f.write(f"{outdat['d']*1e18:8.2E} # d: dislocation density [m^-2]\n")
@@ -449,7 +450,8 @@ def export_model(
         f.write(f"{modfun.__name__:>8} # m: model function\n")
         f.write(f"{modflt:>8} # f: filter\n")
         f.write(col+'\n')
-        np.savetxt(f, val, fmt=fmt)
+        if len(fitdat['j'])>0:
+            np.savetxt(f, val, fmt=fmt)
 
 @beartype
 def export(

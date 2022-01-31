@@ -42,7 +42,7 @@ def F1(
     i1 = 1
     while i1<i0 and a[i1-1]>a[i1]:
         i1 += 1
-    return i1
+    return min(i1, i0)
 
 @beartype
 def F2(
@@ -65,7 +65,8 @@ def F2(
     y = np.log(a)/l**2
     x = np.log(l)
     # filter
-    return F2_xy(y, x)
+    i2 = F2_xy(y, x)
+    return min(i2, i0)
 
 @beartype
 def F2_xy(
