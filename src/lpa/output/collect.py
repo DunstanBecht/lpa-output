@@ -144,7 +144,10 @@ def load_directory(
             qtyval.append(impstm)
         else:
             lstval = [dv[i][j] for i in range(len(stm_fmt))] # to average
-            qtyval.append(sum(lstval)/len(lstval)) # store mean
+            avgval = sum(lstval)/len(lstval) # average
+            if 'err' in qtynam[j]: # the quantity is an error
+                avgval /= np.sqrt(len(stm_fmt))
+            qtyval.append(avgval)
     return tuple(qtyval)
 
 @beartype
@@ -179,9 +182,6 @@ def average(
     n = len(os.listdir(smpdir))
     # edit data
     hdr[1] = f"{dst:8.2e} #" + hdr[1].split('#')[1]
-    for h in range(j):
-        for i in [1, 3]:
-            tab[1+4*h+i] /= np.sqrt(n)
     # write data
     fmt = "%6.1f" + " %22.15E %14.7E %22.15E %14.7E"*j + " %22.15E %10d"
     with open(f"{avgfil}.{fmtout}", 'w') as f:
