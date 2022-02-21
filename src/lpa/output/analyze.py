@@ -31,13 +31,6 @@ def defmodspe(
     """
     modspe = (
         (
-            models.GUW,
-            'F1',
-            np.array((d, r, 0, 600)),
-            ('density[nm-2]', 'cut-off-radius[nm]', 'fluctuation', 'R0[nm]'),
-            ((1e-18, 1), (1e-20, 1e5), (0, 1e2), (1e-200, 1e5)),
-        ),
-        (
             models.KR,
             'F2',
             np.array((d, r)),
@@ -50,6 +43,13 @@ def defmodspe(
             np.array((d, r)),
             ('density[nm-2]', 'cut-off-radius[nm]'),
             ((1e-18, 1), (1e-20, 1e5)),
+        ),
+        (
+            models.GUW,
+            'F1',
+            np.array((d, r, 0, 600)),
+            ('density[nm-2]', 'cut-off-radius[nm]', 'fluctuation', 'R0[nm]'),
+            ((1e-18, 1), (1e-20, 1e5), (0, 1e2), (1e-200, 1e5)),
         ),
     )
     return modspe

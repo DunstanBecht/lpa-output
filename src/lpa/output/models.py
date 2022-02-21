@@ -10,40 +10,6 @@ import scipy.integrate
 from . import *
 
 @beartype
-def GUW(
-    p: ScalarList,
-    o: dict,
-    j: int,
-    l: ScalarList,
-) -> ScalarList:
-    """
-    Return the Fourier amplitudes calculated with the model GUW.
-
-    The model is described in: "I. Groma, T. Ungár, M. Wilkens,
-    Asymmetric X-ray line broadening of plastically deformed crystals.
-    I. Theory, Journal of Applied Crystallography 21 (1) (1988) 47-54"
-
-    Input:
-        p (ScalarList): optimization parameters, contains:
-            d (Scalar): density of dislocations [nm^-2]
-            r (Scalar): outer cut-off radius [nm]
-            f (Scalar): fluctuation oof the density [1]
-            R (Scalar): R0 [nm]
-        o (dict): output data dictionary
-        j (int): selected harmonic
-        l (ScalarList): Fourier variable [nm]
-
-    Output:
-        a (ScalarList): Fourier amplitudes
-    """
-    d, r, f, R = p
-    i = o['index'][j] # index of the harmonic in c
-    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
-    k = np.pi/2*jg2*b2*C*d
-    D = k * (np.log(l/r)+f/2*k*l**2*np.log(l/R)**2)
-    return np.exp(l**2*D)
-
-@beartype
 def KR(
     p: ScalarList,
     o: dict,
@@ -139,3 +105,37 @@ def W(
     AD = np.exp(l**2*D)
     AS = 1
     return AD * AS
+
+@beartype
+def GUW(
+    p: ScalarList,
+    o: dict,
+    j: int,
+    l: ScalarList,
+) -> ScalarList:
+    """
+    Return the Fourier amplitudes calculated with the model GUW.
+
+    The model is described in: "I. Groma, T. Ungár, M. Wilkens,
+    Asymmetric X-ray line broadening of plastically deformed crystals.
+    I. Theory, Journal of Applied Crystallography 21 (1) (1988) 47-54"
+
+    Input:
+        p (ScalarList): optimization parameters, contains:
+            d (Scalar): density of dislocations [nm^-2]
+            r (Scalar): outer cut-off radius [nm]
+            f (Scalar): fluctuation oof the density [1]
+            R (Scalar): R0 [nm]
+        o (dict): output data dictionary
+        j (int): selected harmonic
+        l (ScalarList): Fourier variable [nm]
+
+    Output:
+        a (ScalarList): Fourier amplitudes
+    """
+    d, r, f, R = p
+    i = o['index'][j] # index of the harmonic in c
+    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
+    k = np.pi/2*jg2*b2*C*d
+    D = k * (np.log(l/r)+f/2*k*l**2*np.log(l/R)**2)
+    return np.exp(l**2*D)
