@@ -10,19 +10,18 @@ import scipy.integrate
 from . import *
 
 @beartype
-def GUW1(
+def GUW(
     p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model GUW1.
+    Return the Fourier amplitudes calculated with the model GUW.
 
-    The model is described in: I. Groma, T. Ungár, and M. Wilkens.
-    “Asymmetric X-ray line broadening of plastically deformed crystals.
-    I. Theory”. In: Journal of Applied Crystallography (1988). ISSN:
-    0021-8898.
+    The model is described in: "I. Groma, T. Ungár, M. Wilkens,
+    Asymmetric X-ray line broadening of plastically deformed crystals.
+    I. Theory, Journal of Applied Crystallography 21 (1) (1988) 47-54"
 
     Input:
         p (ScalarList): optimization parameters, contains:
@@ -45,19 +44,19 @@ def GUW1(
     return np.exp(l**2*D)
 
 @beartype
-def GUW2(
+def KR(
     p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model GUW2.
+    Return the Fourier amplitudes calculated with the model KR.
 
-    The model is described in: I. Groma, T. Ungár, and M. Wilkens.
-    “Asymmetric X-ray line broadening of plastically deformed crystals.
-    I. Theory”. In: Journal of Applied Crystallography (1988). ISSN:
-    0021-8898.
+    The model is described in: "M. Krivoglaz, K. Ryaboshapka,
+    Theory of x-ray scattering by crystals containing dislocations,
+    screw and edge dislocations 160 randomly distributed throughout
+    the crystal, Fiz. Metallov. Metalloved 15 (1963) 18–31."
 
     Input:
         p (ScalarList): optimization parameters, contains:
@@ -107,19 +106,19 @@ def f(
 vf = np.vectorize(f)
 
 @beartype
-def W1(
+def W(
     p: ScalarList,
     o: dict,
     j: int,
     l: ScalarList,
 ) -> ScalarList:
     """
-    Return the Fourier amplitudes calculated with the model W1.
+    Return the Fourier amplitudes calculated with the model W.
 
-    The model is described in: M. Wilkens. Fundamental aspects of
+    The model is described in: "M. Wilkens. Fundamental aspects of
     dislocation theory. Ed. by J. A. Simmons, R. de Wit, and R.
     Bullough. Vol. 2. U.S. National Bureau of Standards, 1970, pp.
-    1195–1221.
+    1195–1221"
 
     Input:
         p (ScalarList): optimization parameters contains:
@@ -140,38 +139,3 @@ def W1(
     AD = np.exp(l**2*D)
     AS = 1
     return AD * AS
-
-@beartype
-def W2(
-    p: ScalarList,
-    o: dict,
-    j: int,
-    l: ScalarList,
-) -> ScalarList:
-    """
-    Return the Fourier amplitudes calculated with the model W2.
-
-    The model is described in: J.-D. Kamminga and R. Delhez.
-    “Calculation of diffraction line profiles for structures with
-    dislocations”. In: Materials Science Forum (2001). ISSN: 1662-9752.
-
-    Input:
-        p (ScalarList): optimization parameters contains:
-            d (Scalar): density of dislocations [nm^-2]
-            r (Scalar): outer cut-off radius [nm]
-        o (dict): output data dictionary
-        j (int): selected harmonic
-        l (ScalarList): Fourier variable [nm]
-
-    Output:
-        a (ScalarList): Fourier amplitudes
-    """
-    d, r = p
-    i = o['index'][j] # index of the harmonic in c
-    jgb, jg2, b2, C = o['jgb'][i], o['jg2'][i], o['b2'], o['C']
-    z, g = o['z'], o['g']
-    nz, ng = np.linalg.norm(z), np.linalg.norm(g)
-    s = np.sqrt(1-(np.dot(z, g)/(nz*ng))**2)
-    k = np.pi/2*jg2*b2*C*d
-    D = k * (np.log(l)-np.log(jgb*r)-2*np.log(2)+1/3+np.log(s*np.abs(jgb)))
-    return np.exp(l**2*D)
