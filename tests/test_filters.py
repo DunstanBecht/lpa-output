@@ -9,7 +9,9 @@ from lpa.output import filters
 import numpy as np
 import matplotlib.pyplot as plt
 
-# test f1
+"""
+The following lines consist of a visual demonstration of filter 1.
+"""
 for a in [
     np.array([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]),
     np.array([9, 8, 7, 6, 5, 4, 5, 2, 1, 0]),
@@ -22,8 +24,10 @@ for a in [
     plt.title("F1")
     plt.legend()
     plt.show()
-        
-# test f2
+
+"""
+The following lines consist of a visual demonstration of filter 2.
+"""
 for y in [
     np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
     np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.2, 6.8, 8.6, 11.2]),
