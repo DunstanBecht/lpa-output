@@ -89,6 +89,6 @@ def F2_xy(
         return 2
     std = lambda a, b: np.sqrt(np.linalg.lstsq(a, b, rcond=None)[1][0]/(i-1))
     i = 3
-    while i<len(x) and std(xw[:i+1], y[:i+1])/np.ptp(y[:i+1])<0.01:
+    while i<len(x) and std(xw[:i+1], y[:i+1])/np.ptp(y[:i+1])<0.005:
         i += 1
     return i
