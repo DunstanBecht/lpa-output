@@ -32,11 +32,11 @@ pip install -U lpa-output
 # Examples
 
 ### Simulation output plot
-![Output plot](https://raw.githubusercontent.com/DunstanBecht/lpa-output/084704e772422814fb0933b4787052865103276f/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/output_plot.svg)
+![Output plot](https://raw.githubusercontent.com/DunstanBecht/lpa-output/5a1bf26f7dc0cef1639d769f9cf606cbc9e22171/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/output_plot.svg)
 
 ### Fits data
 ```
-   0.9.9 # v: lpa-ouput version
+  0.9.10 # v: lpa-ouput version
 5.00E+13 # d: dislocation density [m^-2]
     real # t: A(L) transformation
       KR # m: model function
@@ -56,30 +56,18 @@ pip install -U lpa-output
   1     70.0  2.2e-07  4.930026967620467e-05  6.614211441722557e+03
   1     75.0  2.9e-07  4.923532321997969e-05  6.671308949535432e+03
   1     80.0  3.7e-07  4.916156644546603e-05  6.736704404985521e+03
-  1     85.0  4.6e-07  4.907583658364204e-05  6.813516458057326e+03
-  1     90.0  5.6e-07  4.897757673684624e-05  6.902688696556999e+03
-  1     95.0  6.8e-07  4.886670361849483e-05  7.004844129012713e+03
-  1    100.0  8.2e-07  4.874298597666113e-05  7.120852082822335e+03
-  2     15.0  4.4e-07  4.997989330718335e-05  1.252815334626236e+03
-  2     20.0  5.2e-07  4.984628129593066e-05  1.273131100354680e+03
-  2     25.0  7.0e-07  4.970749361568998e-05  1.294433378524444e+03
-  2     30.0  1.0e-06  4.953824795141756e-05  1.320781215585946e+03
-  2     35.0  1.5e-06  4.932225785556162e-05  1.355145112323032e+03
-  2     40.0  2.2e-06  4.906897468866312e-05  1.396652393604014e+03
-  2     45.0  3.0e-06  4.876143329232033e-05  1.448999939603266e+03
-  3     15.0  1.3e-06  4.937734086967591e-05  5.708221266111382e+02
-  3     20.0  2.4e-06  4.905749586050542e-05  5.921278487004540e+02
-  3     25.0  4.2e-06  4.863369126268383e-05  6.216485032186808e+02
-  3     30.0  7.2e-06  4.805635006754815e-05  6.646709653075491e+02
-  4     15.0  3.9e-06  4.886626213838044e-05  3.350853998484390e+02
-  4     20.0  9.7e-06  4.810682575215521e-05  3.647624565964843e+02
-  5     15.0  1.2e-05  4.768064327579875e-05  2.412699898145451e+02
-  5     20.0  3.0e-05  4.617540340463074e-05  2.864938336766070e+02
+  2     15.0  4.4e-07  4.997989346224843e-05  1.252815309192732e+03
+  2     20.0  5.2e-07  4.984628132167453e-05  1.273131101919866e+03
+  2     25.0  7.0e-07  4.970749350973785e-05  1.294433392013414e+03
+  2     30.0  1.0e-06  4.953824808412701e-05  1.320781191398869e+03
+  3     15.0  1.3e-06  4.937734136490503e-05  5.708221010898709e+02
+  4     15.0  3.9e-06  4.886626422113469e-05  3.350853311390957e+02
+  5     15.0  1.2e-05  4.768064254813507e-05  2.412700062577946e+02
 ```
 
 ### Fits plot
-![GUW](https://raw.githubusercontent.com/DunstanBecht/lpa-output/084704e772422814fb0933b4787052865103276f/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/fits_plot_GUW/j1_090nm.svg)
-![KR](https://raw.githubusercontent.com/DunstanBecht/lpa-output/084704e772422814fb0933b4787052865103276f/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/fits_plot_KR/j1_050nm.svg)
+![GUW](https://raw.githubusercontent.com/DunstanBecht/lpa-output/5a1bf26f7dc0cef1639d769f9cf606cbc9e22171/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/fits_plot_GUW/j1_090nm.svg)
+![KR](https://raw.githubusercontent.com/DunstanBecht/lpa-output/5a1bf26f7dc0cef1639d769f9cf606cbc9e22171/tests/fits/10_rho5e13m-2_square_3200nm_RDD_d5e-5nm-2_screw_S0_PBC1_output_analysis/fits_plot_KR/j1_080nm.svg)
 
 # Abbreviations
 
