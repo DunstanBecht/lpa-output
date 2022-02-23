@@ -85,11 +85,10 @@ def F2_xy(
     """
     w = np.ones(len(x))
     xw = np.stack((x, w)).T
-    if len(x)<3:
+    if len(x) < 3:
         return 2
-    err = 0
+    std = lambda a, b: np.sqrt(np.linalg.lstsq(a, b, rcond=None)[1][0]/(i-1))
     i = 3
-    while i<len(x) and np.abs(err/np.ptp(y[:i]))<0.01:
+    while i<len(x) and std(xw[:i+1], y[:i+1])/np.ptp(y[:i+1])<0.01:
         i += 1
-        err = np.sqrt(np.linalg.lstsq(xw[:i], y[:i], rcond=None)[1][0]/(i-2))
     return i
